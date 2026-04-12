@@ -1,0 +1,79 @@
+{% extends 'core/base.html' %}
+{% load custom_tags %}
+
+{% block title %}VESTIGE — Антикварный магазин{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- HERO БЛОК -->
+    <div class="hero">
+        <h1>VESTIGE</h1>
+        <p>Сервис для покупки и продажи антиквариата</p>
+        <a href="/catalog/" class="btn btn-primary" style="font-size: 1.1rem;">В КАТАЛОГ</a>
+    </div>
+
+    <!-- БЛОК "О НАС" -->
+    <div class="about-section">
+        <div class="quote">«Vestige» — след ушедших времен</div>
+        <p>
+            VESTIGE — это мост между эпохами, живое пространство, где история находит своего ценителя.<br><br>
+            Мы верим, что каждое произведение искусства, каждая вещь с историей хранит в себе частицу прошлого — 
+            <strong>«vestige»</strong> (след) ушедших времен. Наша миссия — сохранить эту тонкую связь, дать антиквариату 
+            новую жизнь в руках тех, кто способен оценить его истинную ценность.
+        </p>
+    </div>
+
+    <!-- БЛОК "НЕДАВНО ПРОСМОТРЕННЫЕ" [ТЗ 6.3] -->
+    {% if recently_viewed %}
+    <div class="recent-section">
+        <h2 class="section-title">Недавно просмотренные</h2>
+        <div class="items-scroll">
+            {% for item in recently_viewed %}
+                <a href="{% url 'core:item_detail' item.id %}" class="product-card">
+                    {% if item.image %}
+                        <img src="{{ item.image.url }}" class="product-image" alt="{{ item.name }}">
+                    {% else %}
+                        <div class="product-image" style="background: #e0d8cc; display: flex; align-items: center; justify-content: center;">📷</div>
+                    {% endif %}
+                    <div class="product-info">
+                        <div class="product-title">{{ item.name }}</div>
+                        <div class="product-price">{{ item.price|currency }}</div>
+                        <div class="product-category">{{ item.category.name }}</div>
+                    </div>
+                </a>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- БЛОК "НОВИНКИ" [ТЗ 2.18, 4.4] -->
+    <div class="new-section">
+        <h2 class="section-title">Новинки</h2>
+        <div class="items-scroll">
+            {% get_new_items 3 as new_items %}
+            {% for item in new_items %}
+                <a href="{% url 'core:item_detail' item.id %}" class="product-card">
+                    {% if item.image %}
+                        <img src="{{ item.image.url }}" class="product-image" alt="{{ item.name }}">
+                    {% else %}
+                        <div class="product-image" style="background: #e0d8cc; display: flex; align-items: center; justify-content: center;">📷</div>
+                    {% endif %}
+                    <div class="product-info">
+                        <div class="product-title">{{ item.name }}</div>
+                        <div class="product-price">{{ item.price|currency }}</div>
+                        <div class="product-category">{{ item.category.name }}</div>
+                    </div>
+                </a>
+            {% empty %}
+                <div class="empty-message">Товаров пока нет</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- СТАТИСТИКА (агрегирование) [ТЗ 2.15] - скрыто, но есть в коде -->
+    <div style="display: none;">
+        Всего товаров: {{ total_items }}
+        Средняя цена: {{ avg_price }}
+    </div>
+</div>
+{% endblock %}

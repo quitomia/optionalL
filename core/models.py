@@ -4,6 +4,8 @@ from django.db import models
 from django.utils import timezone # [ТЗ 2.2]
 from django.urls import reverse
 
+from .managers import AvailableItemManager
+
 class User(models.Model):
     email = models.CharField(max_length=255, unique=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
@@ -32,8 +34,6 @@ class Category(models.Model):
     def __str__(self):
         return self.name
 
-    def get_absolute_url(self): # [ТЗ 2.13]
-        return reverse('catalog:category_detail', args=[self.slug])
 
 class AntiqueItem(models.Model):
     # [ТЗ 2.4] choices для состояния
@@ -55,6 +55,8 @@ class AntiqueItem(models.Model):
     video_review_url = models.URLField(blank=True, null=True) # [ТЗ 5.3]
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    objects = models.Manager()
+    available = AvailableItemManager()
 
     class Meta:
         verbose_name = 'Антикварный предмет'
@@ -73,6 +75,8 @@ class AntiqueItem(models.Model):
         if self.price < 0:
             raise ValueError("Цена не может быть отрицательной")
         super().save(*args, **kwargs)
+
+
 
 class CartItem(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='cart_items')
@@ -102,6 +106,12 @@ class Order(models.Model):
     payment_method = models.CharField(max_length=20)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    items_m2m = models.ManyToManyField(
+        'AntiqueItem', 
+        through='OrderItem',
+        through_fields=('order', 'antique_item'),
+        related_name='orders_m2m'
+    )
 
     class Meta:
         verbose_name = 'Заказ'
