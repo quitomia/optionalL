@@ -1,0 +1,124 @@
+{% extends 'core/base.html' %}
+{% load custom_tags %}
+
+{% block title %}{{ item.name }} - VESTIGE{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Хлебные крошки -->
+    <div style="margin-bottom: 1.5rem;">
+        <a href="/" style="color: #8B7355; text-decoration: none;">Главная</a> / 
+        <a href="/catalog/" style="color: #8B7355; text-decoration: none;">Каталог</a> / 
+        <a href="/catalog/?category={{ item.category.slug }}" style="color: #8B7355; text-decoration: none;">{{ item.category.name }}</a> / 
+        <span style="color: var(--gold);">{{ item.name|truncatechars:50 }}</span>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; background: white; border-radius: 24px; padding: 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
+        
+        <!-- ЛЕВАЯ КОЛОНКА - ИЗОБРАЖЕНИЯ -->
+        <div>
+            {% if item.image %}
+                <img src="{{ item.image.url }}" alt="{{ item.name }}" style="width: 100%; border-radius: 16px; object-fit: cover;">
+            {% else %}
+                <div style="width: 100%; height: 400px; background: #e0d8cc; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 4rem;">📷</div>
+            {% endif %}
+            
+            <!-- PDF сертификат -->
+            {% if item.certificate_pdf %}
+                <div style="margin-top: 1rem;">
+                    <a href="{{ item.certificate_pdf }}" target="_blank" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.5rem;">
+                        📄 Скачать PDF-сертификат
+                    </a>
+                </div>
+            {% endif %}
+            
+            <!-- Видеообзор -->
+            {% if item.video_review_url %}
+                <div style="margin-top: 1rem;">
+                    <a href="{{ item.video_review_url }}" target="_blank" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.5rem;">
+                        ▶️ Смотреть видеообзор
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- ПРАВАЯ КОЛОНКА - ИНФОРМАЦИЯ -->
+        <div>
+            <h1 style="font-size: 2rem; margin-bottom: 0.5rem; color: #4E342E;">{{ item.name }}</h1>
+            
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
+                <span style="background: #f0ebe3; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.8rem;">{{ item.category.name }}</span>
+                <span style="background: #f0ebe3; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.8rem;">{{ item.get_condition_display }}</span>
+                {% if item.era %}
+                    <span style="background: #f0ebe3; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.8rem;">{{ item.era }}</span>
+                {% endif %}
+            </div>
+            
+            <!-- Цена [ТЗ 2.12] шаблонный фильтр currency -->
+            <div style="font-size: 2.5rem; font-weight: bold; color: var(--gold); margin-bottom: 1rem;">
+                {{ item.price|currency }}
+            </div>
+            
+            <!-- Наличие -->
+            <div style="margin-bottom: 1.5rem;">
+                {% if item.stock > 0 %}
+                    <span style="color: #2e7d32; display: flex; align-items: center; gap: 0.5rem;">
+                        ✅ В наличии ({{ item.stock }} шт.)
+                    </span>
+                {% else %}
+                    <span style="color: #c62828; display: flex; align-items: center; gap: 0.5rem;">
+                        ❌ Нет в наличии
+                    </span>
+                {% endif %}
+            </div>
+            
+            <!-- Описание -->
+            <div style="margin-bottom: 2rem;">
+                <h3 style="margin-bottom: 0.5rem;">Описание</h3>
+                <p style="line-height: 1.6; color: #4E342E;">{{ item.description|linebreaks }}</p>
+            </div>
+            
+            <!-- Характеристики -->
+            <div style="margin-bottom: 2rem; background: #FDF8F0; padding: 1rem; border-radius: 16px;">
+                <h3 style="margin-bottom: 0.75rem;">Характеристики</h3>
+                <table style="width: 100%;">
+                    <tr>
+                        <td style="padding: 0.5rem 0; color: #8B7355;">Состояние:</td>
+                        <td style="padding: 0.5rem 0;">{{ item.get_condition_display }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0.5rem 0; color: #8B7355;">Эпоха:</td>
+                        <td style="padding: 0.5rem 0;">{{ item.era|default:"Не указана" }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0.5rem 0; color: #8B7355;">Категория:</td>
+                        <td style="padding: 0.5rem 0;">{{ item.category.name }}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 0.5rem 0; color: #8B7355;">Добавлен:</td>
+                        <td style="padding: 0.5rem 0;">{{ item.created_at|date:"d.m.Y" }}</td>
+                    </tr>
+                </table>
+            </div>
+            
+            <!-- Кнопка добавления в корзину -->
+            {% if item.stock > 0 %}
+                <form method="post" action="{% url 'core:add_to_cart' item.id %}">
+                    {% csrf_token %}
+                    <div style="display: flex; gap: 1rem; align-items: center;">
+                        <div class="form-group" style="margin-bottom: 0; width: 100px;">
+                            <label>Кол-во</label>
+                            <input type="number" name="quantity" value="1" min="1" max="{{ item.stock }}" style="width: 100%;">
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="flex: 1; padding: 0.8rem;">
+                            🛒 Добавить в корзину
+                        </button>
+                    </div>
+                </form>
+            {% else %}
+                <button class="btn btn-secondary" disabled style="width: 100%; opacity: 0.5;">Нет в наличии</button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

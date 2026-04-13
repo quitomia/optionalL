@@ -1,0 +1,72 @@
+{% extends 'core/base.html' %}
+{% load custom_tags %}
+
+{% block title %}Корзина - VESTIGE{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="section-title">🛒 Корзина</h1>
+    
+    {% if not has_items %}
+        <div class="empty-message" style="text-align: center; padding: 4rem;">
+            <h3>Корзина пуста</h3>
+            <p style="margin-top: 1rem;">Добавьте товары в корзину, чтобы оформить заказ</p>
+            <a href="/catalog/" class="btn btn-primary" style="margin-top: 1rem;">Перейти в каталог</a>
+        </div>
+    {% else %}
+        <!-- Таблица корзины -->
+        <div style="background: white; border-radius: 24px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
+            <table class="cart-table" style="width: 100%;">
+                <thead>
+                    <tr style="background: #3E2723; color: white;">
+                        <th style="padding: 1rem;">Товар</th>
+                        <th style="padding: 1rem;">Цена</th>
+                        <th style="padding: 1rem;">Количество</th>
+                        <th style="padding: 1rem;">Сумма</th>
+                        <th style="padding: 1rem;"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in cart_items %}
+                    <tr style="border-bottom: 1px solid #E8DCC8;">
+                        <td style="padding: 1rem;">
+                            <div style="display: flex; gap: 1rem; align-items: center;">
+                                {% if item.antique_item.image %}
+                                    <img src="{{ item.antique_item.image.url }}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">
+                                {% else %}
+                                    <div style="width: 60px; height: 60px; background: #e0d8cc; border-radius: 8px; display: flex; align-items: center; justify-content: center;">📷</div>
+                                {% endif %}
+                                <div>
+                                    <a href="{% url 'core:item_detail' item.antique_item.id %}" style="text-decoration: none; color: #4E342E; font-weight: 500;">
+                                        {{ item.antique_item.name }}
+                                    </a>
+                                    <div style="font-size: 0.8rem; color: #8B7355;">{{ item.antique_item.category.name }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td style="padding: 1rem;">{{ item.antique_item.price|currency }}</td>
+                        <td style="padding: 1rem;">
+                            <form method="post" action="{% url 'core:update_cart_item' item.id %}" style="display: flex; gap: 0.5rem; align-items: center;">
+                                {% csrf_token %}
+                                <input type="number" name="quantity" value="{{ item.quantity }}" min="1" max="{{ item.antique_item.stock }}" style="width: 70px; padding: 0.5rem; border: 1px solid #E8DCC8; border-radius: 8px;">
+                                <button type="submit" class="btn btn-secondary" style="padding: 0.3rem 0.8rem;">Обновить</button>
+                            </form>
+                        </td>
+                        <td style="padding: 1rem; font-weight: bold;">{{ item.antique_item.price|floatformat:0|multiply:item.quantity|currency }}</td>
+                        <td style="padding: 1rem;">
+                            <a href="{% url 'core:remove_cart_item' item.id %}" class="btn-outline" style="color: #c62828; border-color: #c62828;" onclick="return confirm('Удалить товар из корзины?')">✕</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Итоговая сумма -->
+        <div class="cart-total" style="text-align: right; margin-top: 2rem;">
+            <p style="font-size: 1.2rem;">Итого: <span style="font-size: 1.8rem; color: var(--gold); font-weight: bold;">{{ total|currency }}</span></p>
+            <a href="{% url 'core:checkout' %}" class="btn btn-primary" style="margin-top: 1rem; padding: 0.8rem 2rem; font-size: 1rem;">Оформить заказ →</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

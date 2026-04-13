@@ -1,0 +1,125 @@
+{% extends 'core/base.html' %}
+{% load custom_tags %}
+
+{% block title %}Каталог антиквариата - VESTIGE{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="section-title">Каталог антиквариата</h1>
+    
+    <!-- ФИЛЬТРЫ -->
+    <div style="background: white; padding: 1.5rem; border-radius: 16px; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+        <form method="get" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end;">
+            <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 150px;">
+                <label>Поиск</label>
+                <input type="text" name="search" placeholder="Название, описание..." value="{{ search_query }}" style="width: 100%;">
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 150px;">
+                <label>Категория</label>
+                <select name="category" style="width: 100%;">
+                    <option value="">Все категории</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat.slug }}" {% if selected_category == cat.slug %}selected{% endif %}>
+                            {{ cat.name }} ({{ cat.item_count }})
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 0; width: 120px;">
+                <label>Цена от</label>
+                <input type="number" name="min_price" placeholder="от" value="{{ min_price }}" style="width: 100%;">
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 0; width: 120px;">
+                <label>до</label>
+                <input type="number" name="max_price" placeholder="до" value="{{ max_price }}" style="width: 100%;">
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 0; min-width: 130px;">
+                <label>Наличие</label>
+                <select name="in_stock" style="width: 100%;">
+                    <option value="">Все</option>
+                    <option value="1" {% if in_stock %}selected{% endif %}>Только в наличии</option>
+                </select>
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 0; min-width: 180px;">
+                <label>Сортировка</label>
+                <select name="sort" style="width: 100%;">
+                    <option value="-created_at" {% if sort_by == '-created_at' %}selected{% endif %}>Новинки</option>
+                    <option value="price" {% if sort_by == 'price' %}selected{% endif %}>Цена (по возрастанию)</option>
+                    <option value="-price" {% if sort_by == '-price' %}selected{% endif %}>Цена (по убыванию)</option>
+                    <option value="name" {% if sort_by == 'name' %}selected{% endif %}>Название (А-Я)</option>
+                    <option value="-name" {% if sort_by == '-name' %}selected{% endif %}>Название (Я-А)</option>
+                </select>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Применить</button>
+            <a href="{% url 'core:catalog' %}" class="btn btn-secondary">Сбросить</a>
+        </form>
+    </div>
+    
+    <!-- СТАТИСТИКА -->
+    <div style="display: flex; gap: 2rem; justify-content: space-between; flex-wrap: wrap; margin-bottom: 2rem;">
+        <div style="background: white; padding: 1rem 1.5rem; border-radius: 12px; flex: 1; text-align: center;">
+            <div style="font-size: 2rem; font-weight: bold; color: var(--gold);">{{ stats.total_count|default:0 }}</div>
+            <div style="font-size: 0.85rem; color: #8B7355;">Всего товаров</div>
+        </div>
+        <div style="background: white; padding: 1rem 1.5rem; border-radius: 12px; flex: 1; text-align: center;">
+            <div style="font-size: 2rem; font-weight: bold; color: var(--gold);">{{ stats.avg_price|floatformat:0|default:0 }} ₽</div>
+            <div style="font-size: 0.85rem; color: #8B7355;">Средняя цена</div>
+        </div>
+        <div style="background: white; padding: 1rem 1.5rem; border-radius: 12px; flex: 1; text-align: center;">
+            <div style="font-size: 2rem; font-weight: bold; color: var(--gold);">{{ stats.total_stock|default:0 }}</div>
+            <div style="font-size: 0.85rem; color: #8B7355;">Всего на складе</div>
+        </div>
+    </div>
+    
+    <!-- ТОВАРЫ -->
+    <div class="products-grid">
+        {% for item in items %}
+            <a href="{% url 'core:item_detail' item.id %}" class="product-card">
+                {% if item.image %}
+                    <img src="{{ item.image.url }}" class="product-image" alt="{{ item.name }}">
+                {% else %}
+                    <div class="product-image" style="background: #e0d8cc; display: flex; align-items: center; justify-content: center;">📷</div>
+                {% endif %}
+                <div class="product-info">
+                    <div class="product-title">{{ item.name }}</div>
+                    <div class="product-price">{{ item.price|currency }}</div>
+                    <div class="product-category">{{ item.category.name }}</div>
+                    {% if item.stock == 0 %}
+                        <div style="color: #d32f2f; font-size: 0.75rem; margin-top: 0.5rem;">Нет в наличии</div>
+                    {% endif %}
+                </div>
+            </a>
+        {% empty %}
+            <div class="empty-message" style="grid-column: 1/-1;">
+                <h3>Товары не найдены</h3>
+                <p>Попробуйте изменить параметры поиска</p>
+            </div>
+        {% endfor %}
+    </div>
+    
+    <!-- ПАГИНАЦИЯ -->
+    {% if items.has_other_pages %}
+    <div class="pagination">
+        {% if items.has_previous %}
+            <a href="?page=1{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">« Первая</a>
+            <a href="?page={{ items.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">‹ Назад</a>
+        {% endif %}
+        
+        <span class="current">
+            Страница {{ items.number }} из {{ items.paginator.num_pages }}
+        </span>
+        
+        {% if items.has_next %}
+            <a href="?page={{ items.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Вперед ›</a>
+            <a href="?page={{ items.paginator.num_pages }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Последняя »</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
