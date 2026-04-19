@@ -5,6 +5,64 @@
 
 {% block content %}
 <div class="container">
+
+    <!-- ФОРМА ПОИСКА -->
+<div style="background: white; border-radius: 24px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
+    <form method="get" action="" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end;">
+        <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
+            <input type="text" name="search" placeholder="Название, описание, эпоха..." value="{{ search_query }}" 
+                   style="width: 100%; padding: 0.75rem; border: 1px solid #E8DCC8; border-radius: 12px; font-size: 1rem;">
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+            <button type="submit" class="btn btn-primary" style="padding: 0.75rem 2rem; font-size: 1rem; font-family: inherit; cursor: pointer;">Найти</button>
+      
+            {% if search_query %}
+                <a href="{% url 'core:home' %}" class="btn btn-secondary" style="padding: 0.75rem 2rem; height: 48px; display: inline-flex; align-items: center; justify-content: center; white-space: nowrap;">Сбросить</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+    <!-- РЕЗУЛЬТАТЫ ПОИСКА -->
+    {% if search_query %}
+        <div style="margin-bottom: 3rem;">
+            <h2 class="section-title">
+                Результаты поиска "{{ search_query }}"
+                <span style="font-size: 1rem; color: #8B7355; font-weight: normal;">(найдено: {{ search_count }})</span>
+            </h2>
+            
+            {% if search_results %}
+                <div class="items-scroll">
+                    {% for item in search_results %}
+                        <a href="{% url 'core:item_detail' item.id %}" class="product-card">
+                            {% if item.image %}
+                                <img src="{{ item.image.url }}" class="product-image" alt="{{ item.name }}">
+                            {% else %}
+                                <div class="product-image" style="background: #e0d8cc; display: flex; align-items: center; justify-content: center;">📷</div>
+                            {% endif %}
+                            <div class="product-info">
+                                <div class="product-title">{{ item.name }}</div>
+                                <div class="product-price">{{ item.price|currency }}</div>
+                                <div class="product-category">{{ item.category.name }}</div>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+                <div style="text-align: center; margin-top: 1.5rem;">
+                    <a href="{% url 'core:catalog' %}?search={{ search_query }}" class="btn btn-secondary">
+                        Все результаты в каталоге →
+                    </a>
+                </div>
+            {% else %}
+                <div class="empty-message" style="text-align: center; padding: 3rem; background: white; border-radius: 16px;">
+                    <p style="font-size: 1.2rem;">😕 Ничего не найдено</p>
+                    <p style="color: #8B7355;">Попробуйте изменить поисковый запрос</p>
+                </div>
+            {% endif %}
+        </div>
+    {% endif %}
+
+
     <!-- HERO БЛОК -->
     <div class="hero">
         <h1 style="font-family: 'Georgia', 'Times New Roman', serif; font-weight: 700;">VESTIGE</h1>
@@ -12,15 +70,31 @@
         <a href="/catalog/" class="btn btn-primary" style="font-size: 1.1rem;">В КАТАЛОГ</a>
     </div>
 
+
     <!-- БЛОК "О НАС" -->
     <div class="about-section">
         <div class="quote">«Vestige» — след ушедших времен</div>
         <p>
             VESTIGE — это мост между эпохами, живое пространство, где история находит своего ценителя.<br><br>
             Мы верим, что каждое произведение искусства, каждая вещь с историей хранит в себе частицу прошлого — 
-            <strong>«vestige»</strong> (след) ушедших времен. Наша миссия — сохранить эту тонкую связь, дать антиквариату 
+            «vestige» (след) ушедших времен. Наша миссия — сохранить эту тонкую связь, дать антиквариату 
             новую жизнь в руках тех, кто способен оценить его истинную ценность.
         </p>
+    </div>
+
+    <div style="display: flex; gap: 2rem; justify-content: space-between; flex-wrap: wrap; margin-bottom: 3rem;">
+        <div style="background: white; padding: 1rem 1.5rem; border-radius: 12px; flex: 1; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <div style="font-size: 2rem; font-weight: bold; color: var(--gold);">{{ stats.total_count|default:0 }}</div>
+            <div style="font-size: 0.85rem; color: #8B7355;">Всего товаров</div>
+        </div>
+        <div style="background: white; padding: 1rem 1.5rem; border-radius: 12px; flex: 1; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <div style="font-size: 2rem; font-weight: bold; color: var(--gold);">{{ stats.avg_price|floatformat:0|default:0 }} ₽</div>
+            <div style="font-size: 0.85rem; color: #8B7355;">Средняя цена</div>
+        </div>
+        <div style="background: white; padding: 1rem 1.5rem; border-radius: 12px; flex: 1; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
+            <div style="font-size: 2rem; font-weight: bold; color: var(--gold);">{{ stats.total_stock|default:0 }}</div>
+            <div style="font-size: 0.85rem; color: #8B7355;">Всего на складе</div>
+        </div>
     </div>
 
     <!-- БЛОК "НЕДАВНО ПРОСМОТРЕННЫЕ" [ТЗ 6.3] -->
@@ -50,7 +124,7 @@
     <div class="new-section">
         <h2 class="section-title">Новинки</h2>
         <div class="items-scroll">
-            {% get_new_items 3 as new_items %}
+            {% get_new_items 4 as new_items %}
             {% for item in new_items %}
                 <a href="{% url 'core:item_detail' item.id %}" class="product-card">
                     {% if item.image %}
@@ -70,10 +144,95 @@
         </div>
     </div>
 
-    <!-- СТАТИСТИКА (агрегирование) [ТЗ 2.15] - скрыто, но есть в коде -->
-    <div style="display: none;">
-        Всего товаров: {{ total_items }}
-        Средняя цена: {{ avg_price }}
+    <!-- БЛОК "МОИ ЗАКАЗЫ" - ПОКАЗЫВАЕТСЯ ТОЛЬКО ДЛЯ АВТОРИЗОВАННЫХ ПОЛЬЗОВАТЕЛЕЙ С ЗАКАЗАМИ -->
+    {% if is_authenticated and user_orders %}
+    <div class="orders-section" style="margin-top: 3rem;">
+        <h2 class="section-title">Мои последние заказы</h2>
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+            {% for order in user_orders %}
+            <div style="background: white; border-radius: 16px; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: transform 0.2s;">
+                <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 1rem;">
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                            <h3 style="color: #3E2723; margin: 0;">Заказ #{{ order.id }}</h3>
+                            <span class="order-status order-status-{{ order.status }}">
+                                {{ order.get_status_display }}
+                            </span>
+                        </div>
+                        <p style="color: #8B7355; margin: 0.5rem 0 0 0; font-size: 0.9rem;">
+                            📅 {{ order.created_at|date:"d.m.Y H:i" }}
+                        </p>
+                    </div>
+                    <div style="text-align: right;">
+                        <p style="font-size: 1.3rem; font-weight: bold; color: var(--gold); margin: 0;">
+                            {{ order.total_price|currency }}
+                        </p>
+                        <p style="font-size: 0.8rem; color: #8B7355; margin: 0.25rem 0 0 0;">
+                            💳 {{ order.get_payment_method_display }}
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- Краткий список товаров в заказе -->
+                <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #E8DCC8;">
+                    <p style="font-size: 0.85rem; color: #8B7355; margin-bottom: 0.5rem;">Товары:</p>
+                    <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
+                        {% for item in order.items.all|slice:":3" %}
+                            <span style="background: #f9f6f0; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.8rem;">
+                                {{ item.antique_item.name }} x{{ item.quantity }}
+                            </span>
+                        {% endfor %}
+                        {% if order.items.all|length > 3 %}
+                            <span style="background: #f9f6f0; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.8rem;">
+                                + еще {{ order.items.all|length|add:"-3" }}
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        {% if user_orders|length > 3 %}
+        <div style="text-align: center; margin-top: 1.5rem;">
+            <a href="{% url 'core:user_orders' %}" class="btn btn-secondary" style="padding: 0.6rem 1.5rem;">
+                Все заказы →
+            </a>
+        </div>
+        {% endif %}
     </div>
+    {% endif %}
+
 </div>
+
+<style>
+    .orders-section {
+        animation: fadeIn 0.5s ease;
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .order-status {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    @media (max-width: 768px) {
+        .orders-section > div > div {
+            padding: 1rem;
+        }
+    }
+</style>
 {% endblock %}

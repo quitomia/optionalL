@@ -1,10 +1,6 @@
-# core/forms.py
-
 from django import forms
 from django.contrib.auth.hashers import make_password, check_password
-from .models import User, Order, CartItem
-
-
+from .models import User, Order, CartItem, AntiqueItem
 # Форма регистрации
 class RegistrationForm(forms.Form):
     email = forms.EmailField(
@@ -63,8 +59,6 @@ class LoginForm(forms.Form):
 # core/forms.py (добавьте в конец файла)
 
 
-
-# [ТЗ 3.4] Meta widgets в формах
 class CartItemForm(forms.ModelForm):
     class Meta:
         model = CartItem
@@ -80,50 +74,93 @@ class CartItemForm(forms.ModelForm):
             'quantity': 'Количество',
         }
 
-
-# [ТЗ 4.12] fields, exclude, widgets, labels, help_texts, error_messages
 class OrderForm(forms.ModelForm):
     class Meta:
         model = Order
-        fields = ['delivery_address', 'payment_method']  # fields
-        # exclude = ['user', 'total_price', 'status']  # альтернатива
+        fields = ['delivery_address', 'payment_method']
         
-        widgets = {  # [ТЗ 3.4, 4.8] Meta widgets, forms.Textarea
+        widgets = {
             'delivery_address': forms.Textarea(attrs={
                 'rows': 3,
                 'placeholder': 'Улица, дом, квартира, подъезд...',
                 'class': 'form-input'
             }),
+            # [ТЗ 4.8] Select с выбором способа оплаты
             'payment_method': forms.Select(attrs={
                 'class': 'form-input'
-            }),
+            }, choices=[
+                ('card', 'Онлайн картой'),
+                ('cash', 'Наличными при получении'),
+            ]),
         }
         
-        labels = {  # labels
+        labels = {
             'delivery_address': 'Адрес доставки',
             'payment_method': 'Способ оплаты',
         }
         
-        help_texts = {  # help_texts
+        help_texts = {
             'delivery_address': 'Укажите точный адрес для доставки',
             'payment_method': 'Выберите удобный способ оплаты',
         }
         
-        error_messages = {  # error_messages
+        error_messages = {
             'delivery_address': {
                 'required': 'Пожалуйста, укажите адрес доставки',
             },
         }
     
-    # [ТЗ 3.5] Пример clean_<fieldname>()
     def clean_delivery_address(self):
         address = self.cleaned_data.get('delivery_address')
         if len(address) < 10:
             raise forms.ValidationError('Адрес должен содержать минимум 10 символов')
         return address
-    
     # [ТЗ 4.9] form.is_valid() + cleaned_data (используется во view)
     def clean(self):
         cleaned_data = super().clean()
         # Дополнительная валидация
         return cleaned_data
+
+class AntiqueItemForm(forms.ModelForm):
+    class Meta:
+        model = AntiqueItem
+        fields = ['name', 'description', 'price', 'category', 'era', 'condition', 'stock', 'image', 'certificate_pdf', 'video_review_url']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Название товара'}),
+            'description': forms.Textarea(attrs={'rows': 4, 'class': 'form-input', 'placeholder': 'Описание...'}),
+            'price': forms.NumberInput(attrs={'class': 'form-input', 'placeholder': 'Цена'}),
+            'category': forms.Select(attrs={'class': 'form-input'}),
+            'era': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Например: XIX век'}),
+            'condition': forms.Select(attrs={'class': 'form-input'}),
+            'stock': forms.NumberInput(attrs={'class': 'form-input', 'placeholder': 'Количество на складе'}),
+            'video_review_url': forms.URLInput(attrs={'class': 'form-input', 'placeholder': 'https://...'}),
+        }
+        labels = {
+            'name': 'Название',
+            'description': 'Описание',
+            'price': 'Цена',
+            'category': 'Категория',
+            'era': 'Эпоха',
+            'condition': 'Состояние',
+            'stock': 'Количество на складе',
+            'image': 'Изображение',
+            'certificate_pdf': 'PDF-сертификат',
+            'video_review_url': 'Ссылка на видеообзор',
+        }
+    class Media:
+        css = {
+            'all': ('css/item-form.css',)  # путь от STATIC_URL
+        }
+        js = ('js/preview-image.js',)      # скрипт для предпросмотра картинки
+    
+    def clean_price(self):
+        price = self.cleaned_data.get('price')
+        if price <= 0:
+            raise forms.ValidationError('Цена должна быть больше 0')
+        return price
+    
+    def clean_stock(self):
+        stock = self.cleaned_data.get('stock')
+        if stock < 0:
+            raise forms.ValidationError('Количество не может быть отрицательным')
+        return stock

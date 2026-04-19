@@ -1,0 +1,22 @@
+{% extends 'core/base.html' %}
+
+{% block title %}Удаление товара - VESTIGE{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 500px;">
+    <div style="background: white; border-radius: 24px; padding: 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.05); text-align: center;">
+        <h1 class="section-title" style="color: #c62828;">Удаление товара</h1>
+        
+        <p style="margin: 2rem 0;">Вы уверены, что хотите удалить товар <strong>"{{ item.name }}"</strong>?</p>
+        <p style="margin-bottom: 2rem; color: #8B7355;">Это действие нельзя отменить.</p>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div style="display: flex; gap: 1rem;">
+                <button type="submit" class="btn btn-primary" style="background: #c62828; border-color: #c62828;">Да, удалить</button>
+                <a href="{% url 'core:item_detail' item.id %}" class="btn btn-secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -5,9 +5,16 @@
 
 {% block content %}
 <div class="container">
+    <!-- Кнопка добавления товара [ТЗ 3.1] -->
+    <div style="margin-bottom: 2rem;">
+        <a href="{% url 'core:item_create' %}" class="btn btn-primary">
+            ➕ Добавить товар
+        </a>
+    </div>
+    
     <h1 class="section-title">Каталог антиквариата</h1>
     
-    <!-- ФИЛЬТРЫ -->
+    <!-- ФИЛЬТРЫ [ТЗ 2.6, 2.7, 2.8, 2.9, 4.2, 4.3] -->
     <div style="background: white; padding: 1.5rem; border-radius: 16px; margin-bottom: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
         <form method="get" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end;">
             <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 150px;">
@@ -61,7 +68,7 @@
         </form>
     </div>
     
-    <!-- СТАТИСТИКА -->
+    <!-- СТАТИСТИКА [ТЗ 2.15] -->
     <div style="display: flex; gap: 2rem; justify-content: space-between; flex-wrap: wrap; margin-bottom: 2rem;">
         <div style="background: white; padding: 1rem 1.5rem; border-radius: 12px; flex: 1; text-align: center;">
             <div style="font-size: 2rem; font-weight: bold; color: var(--gold);">{{ stats.total_count|default:0 }}</div>
@@ -80,21 +87,28 @@
     <!-- ТОВАРЫ -->
     <div class="products-grid">
         {% for item in items %}
-            <a href="{% url 'core:item_detail' item.id %}" class="product-card">
-                {% if item.image %}
-                    <img src="{{ item.image.url }}" class="product-image" alt="{{ item.name }}">
-                {% else %}
-                    <div class="product-image" style="background: #e0d8cc; display: flex; align-items: center; justify-content: center;">📷</div>
-                {% endif %}
-                <div class="product-info">
-                    <div class="product-title">{{ item.name }}</div>
-                    <div class="product-price">{{ item.price|currency }}</div>
-                    <div class="product-category">{{ item.category.name }}</div>
-                    {% if item.stock == 0 %}
-                        <div style="color: #d32f2f; font-size: 0.75rem; margin-top: 0.5rem;">Нет в наличии</div>
+            <div class="product-card">
+                <a href="{% url 'core:item_detail' item.id %}" style="text-decoration: none; color: inherit;">
+                    {% if item.image %}
+                        <img src="{{ item.image.url }}" class="product-image" alt="{{ item.name }}">
+                    {% else %}
+                        <div class="product-image" style="background: #e0d8cc; display: flex; align-items: center; justify-content: center;">📷</div>
                     {% endif %}
+                    <div class="product-info">
+                        <div class="product-title">{{ item.name }}</div>
+                        <div class="product-price">{{ item.price|currency }}</div>
+                        <div class="product-category">{{ item.category.name }}</div>
+                        {% if item.stock == 0 %}
+                            <div style="color: #d32f2f; font-size: 0.75rem; margin-top: 0.5rem;">Нет в наличии</div>
+                        {% endif %}
+                    </div>
+                </a>
+                <!-- Кнопки управления [ТЗ 3.1] -->
+                <div style="padding: 0 1rem 1rem 1rem; display: flex; gap: 0.5rem;">
+                    <a href="{% url 'core:item_edit' item.id %}" class="btn-outline" style="font-size: 0.7rem; padding: 0.2rem 0.5rem;">✏️ Редактировать</a>
+                    <a href="{% url 'core:item_delete' item.id %}" class="btn-outline" style="font-size: 0.7rem; padding: 0.2rem 0.5rem; color: #c62828; border-color: #c62828;" onclick="return confirm('Удалить товар?')">🗑️ Удалить</a>
                 </div>
-            </a>
+            </div>
         {% empty %}
             <div class="empty-message" style="grid-column: 1/-1;">
                 <h3>Товары не найдены</h3>
@@ -103,7 +117,7 @@
         {% endfor %}
     </div>
     
-    <!-- ПАГИНАЦИЯ -->
+    <!-- ПАГИНАЦИЯ [ТЗ 2.14] -->
     {% if items.has_other_pages %}
     <div class="pagination">
         {% if items.has_previous %}

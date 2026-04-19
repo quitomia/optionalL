@@ -1,0 +1,87 @@
+{% extends 'core/base.html' %}
+{% load custom_tags %}
+
+{% block title %}Заказ оформлен - VESTIGE{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 800px; margin: 0 auto;">
+    <div style="background: white; border-radius: 24px; padding: 3rem; box-shadow: 0 4px 20px rgba(0,0,0,0.05); text-align: center;">
+        
+        <!-- Иконка успеха -->
+        <div style="font-size: 5rem; margin-bottom: 1rem;">🎉</div>
+        
+        <!-- Заголовок -->
+        <h1 style="font-family: 'Georgia', 'Times New Roman', serif; font-size: 2rem; color: #3E2723; margin-bottom: 1rem;">
+            Заказ успешно оформлен!
+        </h1>
+
+        
+        <!-- Информационное сообщение -->
+        <div style="margin: 2rem 0;">
+            <p style="font-size: 1.1rem; color: #4E342E; margin-bottom: 0.5rem;">
+                Подтверждение отправлено на вашу почту
+            </p>
+            <p style="font-size: 1rem; color: #8B7355;">
+                В ближайшее время с вами свяжется менеджер для подтверждения заказа.
+            </p>
+        </div>
+        
+        <!-- Кнопки действий -->
+        <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; margin-top: 2rem;">
+            <a href="{% url 'core:catalog' %}" class="btn btn-secondary" style="display: inline-block; padding: 0.8rem 1.5rem; text-decoration: none; border: 2px solid #3E2723; border-radius: 40px; color: #3E2723; font-weight: 500; transition: all 0.3s;">
+                Продолжить покупки
+            </a>
+            <a href="{% url 'core:home' %}" class="btn btn-primary" style="display: inline-block; background: #3E2723; color: white; padding: 0.8rem 1.5rem; text-decoration: none; border-radius: 40px; font-weight: 500; transition: all 0.3s;">
+                На главную
+            </a>
+        </div>
+    </div>
+    
+    <!-- Дополнительный блок с рекомендациями -->
+    <div style="margin-top: 3rem;">
+        <h2 class="section-title">Вас также может заинтересовать</h2>
+        <div class="items-scroll">
+            {% get_new_items 4 as recommended_items %}
+            {% for item in recommended_items %}
+                <a href="{% url 'core:item_detail' item.id %}" class="product-card">
+                    {% if item.image %}
+                        <img src="{{ item.image.url }}" class="product-image" alt="{{ item.name }}">
+                    {% else %}
+                        <div class="product-image" style="background: #e0d8cc; display: flex; align-items: center; justify-content: center;">📷</div>
+                    {% endif %}
+                    <div class="product-info">
+                        <div class="product-title">{{ item.name }}</div>
+                        <div class="product-price">{{ item.price|currency }}</div>
+                        <div class="product-category">{{ item.category.name }}</div>
+                    </div>
+                </a>
+            {% empty %}
+                <div class="empty-message">Товаров пока нет</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<style>
+    .btn-secondary:hover {
+        background: #f5f5f5;
+        transform: translateY(-2px);
+    }
+    
+    .btn-primary:hover {
+        background: #5D4037 !important;
+        transform: translateY(-2px);
+    }
+    
+    @media (max-width: 768px) {
+        .container > div:first-child {
+            padding: 1.5rem !important;
+        }
+        
+        .btn-secondary, .btn-primary {
+            width: 100%;
+            text-align: center;
+        }
+    }
+</style>
+{% endblock %}

@@ -4,13 +4,13 @@
 {% block title %}Оформление заказа - VESTIGE{% endblock %}
 
 {% block content %}
-<div class="container" style="max-width: 800px;">
+<div class="container" style="max-width: 1200px;">
     <h1 class="section-title">Оформление заказа</h1>
     
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
         <!-- Форма заказа -->
         <div style="background: white; border-radius: 24px; padding: 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
-            <h3 style="margin-bottom: 1.5rem;">Контактные данные</h3>
+            <h3 style="margin-bottom: 1.5rem; color: #3E2723;">Контактные данные</h3>
             
             {% if form.non_field_errors %}
                 <div style="background: #ffebee; color: #c62828; padding: 1rem; border-radius: 12px; margin-bottom: 1.5rem;">
@@ -23,8 +23,10 @@
             <form method="post">
                 {% csrf_token %}
                 
-                <div class="form-group">
-                    <label for="{{ form.delivery_address.id_for_label }}">Адрес доставки</label>
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label for="{{ form.delivery_address.id_for_label }}" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">
+                        Адрес доставки *
+                    </label>
                     {{ form.delivery_address }}
                     {% if form.delivery_address.errors %}
                         <ul class="errorlist">
@@ -33,11 +35,15 @@
                             {% endfor %}
                         </ul>
                     {% endif %}
-                    <div class="help-text">{{ form.delivery_address.help_text }}</div>
+                    <div class="help-text" style="font-size: 0.8rem; color: #8B7355; margin-top: 0.25rem;">
+                        {{ form.delivery_address.help_text }}
+                    </div>
                 </div>
                 
-                <div class="form-group">
-                    <label for="{{ form.payment_method.id_for_label }}">Способ оплаты</label>
+                <div class="form-group" style="margin-bottom: 1.5rem;">
+                    <label for="{{ form.payment_method.id_for_label }}" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">
+                        Способ оплаты *
+                    </label>
                     {{ form.payment_method }}
                     {% if form.payment_method.errors %}
                         <ul class="errorlist">
@@ -46,32 +52,103 @@
                             {% endfor %}
                         </ul>
                     {% endif %}
-                    <div class="help-text">{{ form.payment_method.help_text }}</div>
                 </div>
                 
-                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.8rem;">Подтвердить заказ</button>
+                <button type="submit" class="btn btn-primary" style="width: 100%; padding: 0.8rem; background: #3E2723; color: white; border: none; border-radius: 40px; font-size: 1rem; font-weight: bold; cursor: pointer;">
+                    Подтвердить заказ
+                </button>
             </form>
         </div>
         
-        <!-- Сводка заказа -->
+        <!-- Сводка заказа с учетом скидки -->
         <div style="background: white; border-radius: 24px; padding: 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
-            <h3 style="margin-bottom: 1.5rem;">Ваш заказ</h3>
+            <h3 style="margin-bottom: 1.5rem; color: #3E2723;">Ваш заказ</h3>
             
+            <!-- Список товаров - больше места для цены -->
             {% for item in cart_items %}
-                <div style="display: flex; justify-content: space-between; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #E8DCC8;">
-                    <div>
-                        <span>{{ item.antique_item.name }}</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid #E8DCC8;">
+                    <div style="flex: 3; padding-right: 1rem;">
+                        <span style="font-weight: 500;">{{ item.antique_item.name }}</span>
                         <span style="font-size: 0.8rem; color: #8B7355;"> x{{ item.quantity }}</span>
                     </div>
-                    <span>{{ item.antique_item.price|multiply:item.quantity|currency }}</span>
+                    <div style="flex: 1; text-align: right; white-space: nowrap;">
+                        <span style="font-weight: 500;">{{ item.antique_item.price|multiply:item.quantity|currency }}</span>
+                    </div>
                 </div>
             {% endfor %}
             
-            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 2px solid var(--gold); display: flex; justify-content: space-between; font-weight: bold; font-size: 1.2rem;">
-                <span>Итого:</span>
-                <span style="color: var(--gold);">{{ total|currency }}</span>
+            <!-- Сумма без скидки -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; padding-top: 0.5rem;">
+                <span style="flex: 1;">Сумма товаров:</span>
+                <span style="flex: 1; text-align: right; white-space: nowrap;">{{ subtotal|currency }}</span>
+            </div>
+            
+            <!-- Блок скидки -->
+            {% if has_discount %}
+            <div style="display: flex; justify-content: space-between; align-items: center; margin: 0.5rem 0; color: #2E7D32;">
+                <span style="flex: 1;">Скидка постоянного клиента ({{ discount_percent }}%):</span>
+                <span style="flex: 1; text-align: right; white-space: nowrap;">- {{ discount_amount|currency }}</span>
+            </div>
+            {% endif %}
+            
+            <!-- Итоговая сумма -->
+            <div style="margin-top: 1rem; padding-top: 1rem; border-top: 2px solid var(--gold); display: flex; justify-content: space-between; align-items: center; font-weight: bold; font-size: 1.2rem;">
+                <span style="flex: 1;">Итого к оплате:</span>
+                <span style="flex: 1; text-align: right; white-space: nowrap; color: var(--gold); font-size: 1.5rem;">{{ total|currency }}</span>
+            </div>
+            
+            <!-- Информация о скидке -->
+            {% if has_discount %}
+                <div style="margin-top: 1rem; padding: 0.75rem; background: #E8F5E9; border-radius: 12px; font-size: 0.8rem; text-align: center;">
+                    Применена скидка постоянного клиента {{ discount_percent }}%
+                </div>
+            {% else %}
+                <div style="margin-top: 1rem; padding: 0.75rem; background: #FFF3E0; border-radius: 12px; font-size: 0.8rem; text-align: center;">
+                    Оформите еще {{ orders_needed }} заказа и получите скидку 5% на все покупки!
+                </div>
+            {% endif %}
+            
+            <!-- Дополнительная информация -->
+            <div style="margin-top: 1rem; padding: 0.75rem; background: #f9f6f0; border-radius: 12px; font-size: 0.75rem; color: #8B7355; text-align: center;">
+                После подтверждения заказа с вами свяжется менеджер
             </div>
         </div>
     </div>
 </div>
+
+<style>
+    .form-group input, 
+    .form-group textarea, 
+    .form-group select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 1px solid #E8DCC8;
+        border-radius: 12px;
+        font-size: 1rem;
+        transition: all 0.3s;
+    }
+    
+    .form-group input:focus, 
+    .form-group textarea:focus, 
+    .form-group select:focus {
+        outline: none;
+        border-color: #C6A43F;
+        box-shadow: 0 0 0 3px rgba(198, 164, 63, 0.1);
+    }
+    
+    .errorlist {
+        color: #c62828;
+        font-size: 0.8rem;
+        margin-top: 0.25rem;
+        list-style: none;
+        padding-left: 0;
+    }
+    
+    @media (max-width: 768px) {
+        .container > div {
+            grid-template-columns: 1fr !important;
+            gap: 1rem !important;
+        }
+    }
+</style>
 {% endblock %}

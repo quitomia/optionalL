@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}VESTIGE — Антикварный магазин{% endblock %}</title>
+    {% block extra_head %}{% endblock %}
     <style>
         * {
             margin: 0;
@@ -456,6 +457,29 @@
                 grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
             }
         }
+            .order-status-processing {
+                background: #FFF3E0;
+                color: #E65100;
+            }
+            .order-status-shipped {
+                background: #E3F2FD;
+                color: #1565C0;
+            }
+            .order-status-delivered {
+                background: #E8F5E9;
+                color: #2E7D32;
+            }
+            .order-status-cancelled {
+                background: #FFEBEE;
+                color: #C62828;
+            }
+            .order-status {
+                padding: 0.25rem 0.75rem;
+                border-radius: 20px;
+                font-size: 0.8rem;
+                font-weight: 500;
+                display: inline-block;
+            }
     </style>
 </head>
 <body>
@@ -470,12 +494,12 @@
                 {% endif %}
                 <a href="/cart/" class="cart-link">Корзина</a>
                 <div class="user-info">
-                    {% if user.is_authenticated %}
-                        <span style="color: #C7A252;">👤 {{ user.name|default:user.email }}</span>
-                        <a href="/logout/" class="btn-outline">Выход</a>
+                    {% if session_user.is_authenticated %}
+                        <span style="color: #C7A252;">👤 {{ session_user.name|default:session_user.email }}</span>
+                        <a href="{% url 'core:logout' %}" class="btn-outline">Выход</a>
                     {% else %}
-                        <a href="/login/" class="btn-outline">Вход</a>
-                        <a href="/register/" class="btn-outline">Регистрация</a>
+                        <a href="{% url 'core:login' %}" class="btn-outline">Вход</a>
+                        <a href="{% url 'core:register' %}" class="btn-outline">Регистрация</a>
                     {% endif %}
                 </div>
             </div>

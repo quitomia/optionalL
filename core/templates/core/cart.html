@@ -5,7 +5,7 @@
 
 {% block content %}
 <div class="container">
-    <h1 class="section-title">🛒 Корзина</h1>
+    <h1 class="section-title">Корзина</h1>
     
     {% if not has_items %}
         <div class="empty-message" style="text-align: center; padding: 4rem;">
@@ -15,46 +15,51 @@
         </div>
     {% else %}
         <!-- Таблица корзины -->
-        <div style="background: white; border-radius: 24px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
-            <table class="cart-table" style="width: 100%;">
+                <!-- Таблица корзины -->
+        <div style="background: white; border-radius: 24px; overflow-x: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
+            <table class="cart-table" style="width: 100%; min-width: 600px;">
                 <thead>
                     <tr style="background: #3E2723; color: white;">
-                        <th style="padding: 1rem;">Товар</th>
-                        <th style="padding: 1rem;">Цена</th>
-                        <th style="padding: 1rem;">Количество</th>
-                        <th style="padding: 1rem;">Сумма</th>
-                        <th style="padding: 1rem;"></th>
+                        <th style="padding: 1rem; width: 54%;">Товар</th>
+                        <th style="padding: 1rem; width: 13%;">Цена</th>
+                        <th style="padding: 1rem; width: 15%;">Количество</th>
+                        <th style="padding: 1rem; width: 13%;">Сумма</th>
+                        <th style="padding: 1rem; width: 5%;"></th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for item in cart_items %}
                     <tr style="border-bottom: 1px solid #E8DCC8;">
-                        <td style="padding: 1rem;">
+                        <td style="padding: 0.75rem 1rem;">
                             <div style="display: flex; gap: 1rem; align-items: center;">
                                 {% if item.antique_item.image %}
-                                    <img src="{{ item.antique_item.image.url }}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">
+                                    <img src="{{ item.antique_item.image.url }}" style="width: 50px; height: 50px; object-fit: cover; border-radius: 8px;">
                                 {% else %}
-                                    <div style="width: 60px; height: 60px; background: #e0d8cc; border-radius: 8px; display: flex; align-items: center; justify-content: center;">📷</div>
+                                    <div style="width: 50px; height: 50px; background: #e0d8cc; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">📷</div>
                                 {% endif %}
                                 <div>
-                                    <a href="{% url 'core:item_detail' item.antique_item.id %}" style="text-decoration: none; color: #4E342E; font-weight: 500;">
+                                    <a href="{% url 'core:item_detail' item.antique_item.id %}" style="text-decoration: none; color: #4E342E; font-weight: 500; font-size: 0.95rem;">
                                         {{ item.antique_item.name }}
                                     </a>
-                                    <div style="font-size: 0.8rem; color: #8B7355;">{{ item.antique_item.category.name }}</div>
+                                    <div style="font-size: 0.75rem; color: #8B7355;">{{ item.antique_item.category.name }}</div>
                                 </div>
                             </div>
                         </td>
-                        <td style="padding: 1rem;">{{ item.antique_item.price|currency }}</td>
-                        <td style="padding: 1rem;">
-                            <form method="post" action="{% url 'core:update_cart_item' item.id %}" style="display: flex; gap: 0.5rem; align-items: center;">
+                        <td style="padding: 0.75 rem 1rem; text-align: center; font-weight: 500;">
+                            {{ item.antique_item.price|currency }}
+                        </td>
+                        <td style="padding: 0.75rem 1rem; text-align: center;">
+                            <form method="post" action="{% url 'core:update_cart_item' item.id %}" style="display: flex; gap: 0.5rem; align-items: center; justify-content: center;">
                                 {% csrf_token %}
-                                <input type="number" name="quantity" value="{{ item.quantity }}" min="1" max="{{ item.antique_item.stock }}" style="width: 70px; padding: 0.5rem; border: 1px solid #E8DCC8; border-radius: 8px;">
-                                <button type="submit" class="btn btn-secondary" style="padding: 0.3rem 0.8rem;">Обновить</button>
+                                <input type="number" name="quantity" value="{{ item.quantity }}" min="1" max="{{ item.antique_item.stock }}" style="width: 65px; padding: 0.4rem; border: 1px solid #E8DCC8; border-radius: 8px; text-align: center;">
+                                <button type="submit" class="btn btn-secondary" style="padding: 0.25rem 0.6rem; font-size: 0.8rem;">Обновить</button>
                             </form>
                         </td>
-                        <td style="padding: 1rem; font-weight: bold;">{{ item.antique_item.price|floatformat:0|multiply:item.quantity|currency }}</td>
-                        <td style="padding: 1rem;">
-                            <a href="{% url 'core:remove_cart_item' item.id %}" class="btn-outline" style="color: #c62828; border-color: #c62828;" onclick="return confirm('Удалить товар из корзины?')">✕</a>
+                        <td style="padding: 0.75rem 1rem; text-align: center; font-weight: bold; font-size: 1rem;">
+                            {{ item.antique_item.price|floatformat:0|multiply:item.quantity|currency }}
+                        </td>
+                        <td style="padding: 0.75rem 1rem; text-align: center;">
+                            <a href="{% url 'core:remove_cart_item' item.id %}" class="btn-outline" style="color: #c62828; border-color: #c62828; padding: 0.25rem 0.6rem; font-size: 0.8rem;" onclick="return confirm('Удалить товар из корзины?')">✕</a>
                         </td>
                     </tr>
                     {% endfor %}
@@ -62,11 +67,70 @@
             </table>
         </div>
         
-        <!-- Итоговая сумма -->
-        <div class="cart-total" style="text-align: right; margin-top: 2rem;">
-            <p style="font-size: 1.2rem;">Итого: <span style="font-size: 1.8rem; color: var(--gold); font-weight: bold;">{{ total|currency }}</span></p>
-            <a href="{% url 'core:checkout' %}" class="btn btn-primary" style="margin-top: 1rem; padding: 0.8rem 2rem; font-size: 1rem;">Оформить заказ →</a>
+        <!-- Блок с итогами - расположение: слева статус, справа сумма, кнопка слева -->
+        <div class="cart-summary" style="background: #f9f6f0; border-radius: 24px; padding: 2rem; margin-top: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 2rem;">
+                
+                <!-- ЛЕВАЯ ЧАСТЬ: Блок статуса лояльности -->
+                <div style="flex: 1; min-width: 250px;">
+                    <div style="padding: 1rem; background: white; border-radius: 16px;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+                            <span style="font-weight: bold;">Ваш статус:</span>
+                            {% if has_discount %}
+                                <span style="font-weight: bold;">Постоянный клиент</span>
+                            {% else %}
+                                <span>Новичок</span>
+                            {% endif %}
+                        </div>
+                        
+                        {% if has_discount %}
+                            <div style="color: #2E7D32; font-size: 0.9rem;">
+                                Вам доступна скидка {{ discount_percent }}% как постоянному клиенту!
+                            </div>
+                        {% else %}
+                            <div style="font-size: 0.9rem;">
+                                Осталось оформить {{ orders_needed }} заказа до скидки 5%
+                            </div>
+                            <div style="font-size: 0.8rem; color: #8B7355; margin-top: 0.25rem;">
+                                Выполнено заказов: {{ completed_orders_count }} из 3
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- ПРАВАЯ ЧАСТЬ: Сумма и кнопка -->
+                <div style="min-width: 280px;">
+                    <!-- Сумма товаров -->
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.75rem;">
+                        <span>Сумма товаров:</span>
+                        <span>{{ subtotal|currency }}</span>
+                    </div>
+                    
+                    <!-- Скидка -->
+                    {% if has_discount %}
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.75rem; color: #2E7D32;">
+                        <span>Скидка постоянного клиента ({{ discount_percent }}%):</span>
+                        <span>- {{ discount_amount|currency }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    
+
+                    <!-- Итоговая сумма (на отдельной строке) -->
+                    <div style="border-top: 2px solid #E8DCC8; margin-top: 0.5rem;">
+                        <div style="font-size: 1rem; color: #8B7355; margin-bottom: 0.25rem;">Итого к оплате:</div>
+                        <div style="font-size: 2rem; font-weight: bold; color: var(--gold);">{{ total|currency }}</div>
+                    </div>
+                    
+                    <!-- Кнопка оформления заказа (слева) -->
+                    <div style="margin-top: 1.5rem;">
+                        <a href="{% url 'core:checkout' %}" class="btn btn-primary" style="display: inline-block; padding: 1rem 2.5rem; font-size: 1.1rem;">
+                            Оформить заказ 
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
-    {% endif %}
+    {% endif %}  
 </div>
 {% endblock %}

@@ -15,16 +15,27 @@ def currency(value):
     except (ValueError, TypeError):
         return f"{value} ₽"
 
+# [ТЗ 2.12] Еще один шаблонный фильтр (количество товаров в корзине)
+@register.filter
+def cart_count(user):
+    """Возвращает количество товаров в корзине"""
+    if user.is_authenticated:
+        return CartItem.objects.filter(user=user).count()
+    return 0
+
 # [ТЗ 2.17] Шаблонный тег с контекстными переменными (сумма корзины)
 @register.simple_tag(takes_context=True)
 def cart_total(context):
     """Возвращает общую сумму товаров в корзине текущего пользователя"""
     request = context.get('request')
-    if request and request.user.is_authenticated:
-        total = CartItem.objects.filter(user=request.user).aggregate(
-            total=Sum(F('antique_item__price') * F('quantity'))
-        )['total']
-        return total or 0
+    if request:
+        # Получаем user_id из сессии
+        user_id = request.session.get('user_id')
+        if user_id:
+            total = CartItem.objects.filter(user_id=user_id).aggregate(
+                total=Sum(F('antique_item__price') * F('quantity'))
+            )['total']
+            return total or 0
     return 0
 
 # [ТЗ 2.18] Шаблонный тег, возвращающий QuerySet (новинки)
@@ -33,13 +44,6 @@ def get_new_items(limit=3):
     """Возвращает последние добавленные товары"""
     return AntiqueItem.objects.filter(stock__gt=0).order_by('-created_at')[:limit]
 
-# [ТЗ 2.12] Еще один шаблонный фильтр (количество товаров в корзине)
-@register.filter
-def cart_count(user):
-    """Возвращает количество товаров в корзине"""
-    if user.is_authenticated:
-        return CartItem.objects.filter(user=user).count()
-    return 0
 
 @register.filter
 def multiply(value, arg):

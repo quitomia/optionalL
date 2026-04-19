@@ -1,0 +1,23 @@
+/* Предпросмотр изображения */
+.image-preview {
+    max-width: 200px;
+    max-height: 200px;
+    margin-top: 10px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    padding: 4px;
+}
+
+/* Стили для полей с файлами */
+input[type="file"] {
+    padding: 8px;
+    background: #f9f7f4;
+    border: 1px dashed #C7A252;
+    border-radius: 8px;
+}
+
+/* Подсветка полей при ошибке */
+.error input, .error textarea, .error select {
+    border-color: #c62828 !important;
+    background-color: #ffebee !important;
+}

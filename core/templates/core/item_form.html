@@ -1,0 +1,73 @@
+{% extends 'core/base.html' %}
+
+{% block title %}{{ title }} - VESTIGE{% endblock %}
+
+{% load static %}
+{% block extra_head %}
+    {{ form.media }}
+    <style>
+        .errorlist {
+            color: #d32f2f;
+            font-size: 0.8rem;
+            margin-top: 0.25rem;
+            list-style: none;
+            padding-left: 0;
+        }
+        .form-group.error input,
+        .form-group.error select,
+        .form-group.error textarea {
+            border-color: #d32f2f !important;
+            background-color: #ffebee !important;
+        }
+        .non-field-errors {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 1rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="container" style="max-width: 800px;">
+    <div style="background: white; border-radius: 24px; padding: 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
+        <h1 class="section-title">{{ title }}</h1>
+        
+        <!-- Ошибки не связанные с конкретным полем (например, из clean()) -->
+        {% if form.non_field_errors %}
+            <div class="non-field-errors">
+                {% for error in form.non_field_errors %}
+                    {{ error }}
+                {% endfor %}
+            </div>
+        {% endif %}
+        
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            {% for field in form %}
+                <div class="form-group {% if field.errors %}error{% endif %}">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                        <ul class="errorlist">
+                            {% for error in field.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                    {% if field.help_text %}
+                        <div class="help-text">{{ field.help_text }}</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            
+            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                <button type="submit" class="btn btn-primary">Сохранить</button>
+                <a href="{% url 'core:catalog' %}" class="btn btn-secondary">Отмена</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

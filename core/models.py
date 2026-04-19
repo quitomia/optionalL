@@ -46,10 +46,15 @@ class AntiqueItem(models.Model):
     description = models.TextField()
     price = models.DecimalField(max_digits=10, decimal_places=2)
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='items') # [ТЗ 2.5] related_name
+    additional_categories = models.ManyToManyField(
+        Category, 
+        blank=True,
+        related_name='additional_items',
+        verbose_name='Дополнительные категории'
+    )
     era = models.CharField(max_length=100, blank=True)
     condition = models.CharField(max_length=20, choices=ConditionChoices.choices, default=ConditionChoices.GOOD)
     stock = models.PositiveIntegerField(default=0)
-    # [ТЗ 5.2] models.FileField и [ТЗ 6.2] models.ImageField
     image = models.ImageField(upload_to='items/', blank=True, null=True)
     certificate_pdf = models.FileField(upload_to='certificates/', blank=True, null=True)
     video_review_url = models.URLField(blank=True, null=True) # [ТЗ 5.3]
@@ -69,7 +74,6 @@ class AntiqueItem(models.Model):
     def get_absolute_url(self):
         return reverse('catalog:item_detail', args=[self.id])
 
-    # [ТЗ 3.3] Пример использования save()
     def save(self, *args, **kwargs):
         # Здесь можно добавить логику, например, проверку цены
         if self.price < 0:
@@ -119,7 +123,7 @@ class Order(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"Order #{self.id} by {self.user.email}"
+        return f"Заказ #{self.id} {self.user.email}"
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')

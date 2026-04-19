@@ -17,5 +17,9 @@ urlpatterns = [
     path('cart/remove/<int:item_id>/', views.remove_cart_item, name='remove_cart_item'),
     path('checkout/', views.checkout_view, name='checkout'),
     path('order-success/<int:order_id>/', views.order_success_view, name='order_success'),
-]
 
+    # CRUD для товаров
+    path('items/create/', views.item_create_view, name='item_create'),
+    path('items/<int:pk>/edit/', views.item_edit_view, name='item_edit'),
+    path('items/<int:pk>/delete/', views.item_delete_view, name='item_delete'),
+]
