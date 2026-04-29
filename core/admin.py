@@ -6,6 +6,8 @@ from django.contrib.auth.hashers import make_password
 from django import forms
 from . import models
 
+from simple_history.admin import SimpleHistoryAdmin
+
 # [ТЗ 6.5] Inlines в админке
 class CartItemInline(admin.TabularInline):
     model = models.CartItem
@@ -64,7 +66,7 @@ export_order_pdf.short_description = "Экспортировать выбран�
 
 
 @admin.register(models.User)
-class UserAdmin(admin.ModelAdmin):
+class UserAdmin(SimpleHistoryAdmin):
     # [ТЗ 7.1] list_display + собственный метод
     @admin.display(description='Полное имя')
     def get_full_name(self, obj):
@@ -83,6 +85,8 @@ class UserAdmin(admin.ModelAdmin):
             obj.password = make_password(obj.password)
         super().save_model(request, obj, form, change)
 
+    history_list_display = ['is_staff', 'email']
+
 
 @admin.register(models.Category)
 class CategoryAdmin(admin.ModelAdmin):
@@ -91,7 +95,7 @@ class CategoryAdmin(admin.ModelAdmin):
     prepopulated_fields = {'slug': ('name',)}
 
 @admin.register(models.AntiqueItem)
-class AntiqueItemAdmin(admin.ModelAdmin):
+class AntiqueItemAdmin(SimpleHistoryAdmin):
     
     # [ТЗ 7.5, 7.6] @admin.display и short_description
     @admin.display(description='Превью')
@@ -130,6 +134,7 @@ class AntiqueItemAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+    history_list_display = ['price', 'stock']
 
 
 @admin.register(models.CartItem)
@@ -142,7 +147,7 @@ class CartItemAdmin(admin.ModelAdmin):
 
 
 @admin.register(models.Order)
-class OrderAdmin(admin.ModelAdmin):
+class OrderAdmin(SimpleHistoryAdmin):
     list_display = ('id', 'user', 'total_price', 'status', 'created_at')
     list_filter = ('status', 'payment_method')  # [ТЗ 7.2]
     search_fields = ('user__email', 'delivery_address', 'id')  # Добавляем поиск по ID заказа
@@ -152,6 +157,7 @@ class OrderAdmin(admin.ModelAdmin):
     autocomplete_fields = ('user',)  # Автодополнение для пользователя
 
     actions = [export_order_pdf]  # [ТЗ 5.1] Генерация PDF в админке
+    history_list_display = ['status', 'total_price']
 
 
 @admin.register(models.OrderItem)

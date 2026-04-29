@@ -3,6 +3,8 @@ from django.utils import timezone
 from django.urls import reverse
 from .managers import AvailableItemManager
 
+from simple_history.models import HistoricalRecords
+
 class User(models.Model):
     email = models.CharField(max_length=255, unique=True, verbose_name='Email')
     phone = models.CharField(max_length=20, blank=True, null=True, verbose_name='Телефон')
@@ -10,6 +12,8 @@ class User(models.Model):
     password = models.CharField(max_length=255, verbose_name='Пароль')
     is_staff = models.BooleanField(default=False, verbose_name='Персонал')
     date_joined = models.DateTimeField(default=timezone.now, verbose_name='Дата регистрации')
+
+    history = HistoricalRecords(verbose_name='История пользователя')
 
     class Meta:
         verbose_name = 'Пользователь'
@@ -73,6 +77,7 @@ class AntiqueItem(models.Model):
     
     objects = models.Manager()
     available = AvailableItemManager()
+    history = HistoricalRecords(verbose_name='История изменений')
 
     class Meta:
         verbose_name = 'Антикварный предмет'
@@ -159,6 +164,7 @@ class Order(models.Model):
         through_fields=('order', 'antique_item'),
         related_name='orders_m2m'
     )
+    history = HistoricalRecords(verbose_name='История заказа')
 
     class Meta:
         verbose_name = 'Заказ'
