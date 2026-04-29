@@ -5,23 +5,31 @@
 
 {% block content %}
 <div class="container">
+    <!-- HERO БЛОК -->
+    <div class="hero">
+        <div class="hero-content">
+            <h1 class="hero-title">VESTIGE</h1>
+            <p class="hero-subtitle">Сервис для покупки и продажи антиквариата</p>
+            <a href="{% url 'core:catalog' %}" class="btn btn-primary hero-btn">В КАТАЛОГ</a>
+        </div>
+    </div>
 
     <!-- ФОРМА ПОИСКА -->
-<div style="background: white; border-radius: 24px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
-    <form method="get" action="" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end;">
-        <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
-            <input type="text" name="search" placeholder="Название, описание, эпоха..." value="{{ search_query }}" 
-                   style="width: 100%; padding: 0.75rem; border: 1px solid #E8DCC8; border-radius: 12px; font-size: 1rem;">
-        </div>
-        <div style="display: flex; gap: 0.5rem;">
-            <button type="submit" class="btn btn-primary" style="padding: 0.75rem 2rem; font-size: 1rem; font-family: inherit; cursor: pointer;">Найти</button>
-      
-            {% if search_query %}
-                <a href="{% url 'core:home' %}" class="btn btn-secondary" style="padding: 0.75rem 2rem; height: 48px; display: inline-flex; align-items: center; justify-content: center; white-space: nowrap;">Сбросить</a>
-            {% endif %}
-        </div>
-    </form>
-</div>
+    <div style="background: white; border-radius: 24px; padding: 1.5rem; margin-bottom: 2rem; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
+        <form method="get" action="" style="display: flex; flex-wrap: wrap; gap: 1rem; align-items: flex-end;">
+            <div class="form-group" style="margin-bottom: 0; flex: 1; min-width: 200px;">
+                <label for="search-input-home" class="sr-only">Поиск по каталогу</label>
+                <input type="text" id="search-input-home" name="search" placeholder="Название, описание, эпоха..." value="{{ search_query }}" 
+                    style="width: 100%; padding: 0.75rem; border: 1px solid #E8DCC8; border-radius: 12px; font-size: 1rem;">
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+                <button type="submit" class="btn btn-primary" style="padding: 0.75rem 2rem; font-size: 1rem; cursor: pointer;">Найти</button>
+                {% if search_query %}
+                    <a href="{% url 'core:home' %}" class="btn btn-secondary" style="padding: 0.75rem 2rem; height: 48px; display: inline-flex; align-items: center; justify-content: center; white-space: nowrap;">Сбросить</a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
 
     <!-- РЕЗУЛЬТАТЫ ПОИСКА -->
     {% if search_query %}
@@ -36,9 +44,9 @@
                     {% for item in search_results %}
                         <a href="{% url 'core:item_detail' item.id %}" class="product-card">
                             {% if item.image %}
-                                <img src="{{ item.image.url }}" class="product-image" alt="{{ item.name }}">
+                                <img src="{{ item.image.url }}" class="product-image" alt="{{ item.name }} — антикварный предмет, {{ item.category.name }}, цена {{ item.price|currency }}">
                             {% else %}
-                                <div class="product-image" style="background: #e0d8cc; display: flex; align-items: center; justify-content: center;">📷</div>
+                                <div class="product-image" style="background: #e0d8cc; display: flex; align-items: center; justify-content: center;" aria-hidden="true">📷</div>
                             {% endif %}
                             <div class="product-info">
                                 <div class="product-title">{{ item.name }}</div>
@@ -62,42 +70,7 @@
         </div>
     {% endif %}
 
-
-    <!-- HERO БЛОК -->
-    <div class="hero">
-        <h1 style="font-family: 'Georgia', 'Times New Roman', serif; font-weight: 700;">VESTIGE</h1>
-        <p>Сервис для покупки и продажи антиквариата</p>
-        <a href="/catalog/" class="btn btn-primary" style="font-size: 1.1rem;">В КАТАЛОГ</a>
-    </div>
-
-
-    <!-- БЛОК "О НАС" -->
-    <div class="about-section">
-        <div class="quote">«Vestige» — след ушедших времен</div>
-        <p>
-            VESTIGE — это мост между эпохами, живое пространство, где история находит своего ценителя.<br><br>
-            Мы верим, что каждое произведение искусства, каждая вещь с историей хранит в себе частицу прошлого — 
-            «vestige» (след) ушедших времен. Наша миссия — сохранить эту тонкую связь, дать антиквариату 
-            новую жизнь в руках тех, кто способен оценить его истинную ценность.
-        </p>
-    </div>
-
-    <div style="display: flex; gap: 2rem; justify-content: space-between; flex-wrap: wrap; margin-bottom: 3rem;">
-        <div style="background: white; padding: 1rem 1.5rem; border-radius: 12px; flex: 1; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-            <div style="font-size: 2rem; font-weight: bold; color: var(--gold);">{{ stats.total_count|default:0 }}</div>
-            <div style="font-size: 0.85rem; color: #8B7355;">Всего товаров</div>
-        </div>
-        <div style="background: white; padding: 1rem 1.5rem; border-radius: 12px; flex: 1; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-            <div style="font-size: 2rem; font-weight: bold; color: var(--gold);">{{ stats.avg_price|floatformat:0|default:0 }} ₽</div>
-            <div style="font-size: 0.85rem; color: #8B7355;">Средняя цена</div>
-        </div>
-        <div style="background: white; padding: 1rem 1.5rem; border-radius: 12px; flex: 1; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05);">
-            <div style="font-size: 2rem; font-weight: bold; color: var(--gold);">{{ stats.total_stock|default:0 }}</div>
-            <div style="font-size: 0.85rem; color: #8B7355;">Всего на складе</div>
-        </div>
-    </div>
-
-    <!-- БЛОК "НЕДАВНО ПРОСМОТРЕННЫЕ" [ТЗ 6.3] -->
+    <!-- БЛОК "НЕДАВНО ПРОСМОТРЕННЫЕ" -->
     {% if recently_viewed %}
     <div class="recent-section">
         <h2 class="section-title">Недавно просмотренные</h2>
@@ -105,9 +78,9 @@
             {% for item in recently_viewed %}
                 <a href="{% url 'core:item_detail' item.id %}" class="product-card">
                     {% if item.image %}
-                        <img src="{{ item.image.url }}" class="product-image" alt="{{ item.name }}">
+                        <img src="{{ item.image.url }}" class="product-image" alt="{{ item.name }} — антикварный предмет, {{ item.category.name }}, цена {{ item.price|currency }}">
                     {% else %}
-                        <div class="product-image" style="background: #e0d8cc; display: flex; align-items: center; justify-content: center;">📷</div>
+                        <div class="product-image" style="background: #e0d8cc; display: flex; align-items: center; justify-content: center;" aria-hidden="true">📷</div>
                     {% endif %}
                     <div class="product-info">
                         <div class="product-title">{{ item.name }}</div>
@@ -120,17 +93,20 @@
     </div>
     {% endif %}
 
-    <!-- БЛОК "НОВИНКИ" [ТЗ 2.18, 4.4] -->
+    <!-- БЛОК "НОВИНКИ" -->
     <div class="new-section">
-        <h2 class="section-title">Новинки</h2>
+        <h2 class="section-title">
+            <span>Новинки</span>
+            <a href="{% url 'core:catalog' %}" class="section-link">Все товары →</a>
+        </h2>
         <div class="items-scroll">
             {% get_new_items 4 as new_items %}
             {% for item in new_items %}
                 <a href="{% url 'core:item_detail' item.id %}" class="product-card">
                     {% if item.image %}
-                        <img src="{{ item.image.url }}" class="product-image" alt="{{ item.name }}">
+                        <img src="{{ item.image.url }}" class="product-image" alt="{{ item.name }} — антикварный предмет, {{ item.category.name }}, цена {{ item.price|currency }}">
                     {% else %}
-                        <div class="product-image" style="background: #e0d8cc; display: flex; align-items: center; justify-content: center;">📷</div>
+                        <div class="product-image" style="background: #e0d8cc; display: flex; align-items: center; justify-content: center;" aria-hidden="true">📷</div>
                     {% endif %}
                     <div class="product-info">
                         <div class="product-title">{{ item.name }}</div>
@@ -144,7 +120,54 @@
         </div>
     </div>
 
-    <!-- БЛОК "МОИ ЗАКАЗЫ" - ПОКАЗЫВАЕТСЯ ТОЛЬКО ДЛЯ АВТОРИЗОВАННЫХ ПОЛЬЗОВАТЕЛЕЙ С ЗАКАЗАМИ -->
+    <!-- БЛОК "СКОРЫЕ АУКЦИОНЫ" -->
+    {% if upcoming_auctions %}
+    <div class="auctions-section">
+        <h2 class="section-title">
+            <span>Скорые аукционы</span>
+            <a href="{% url 'core:auctions' %}" class="section-link">Все аукционы →</a>
+        </h2>
+        <div class="upcoming-auctions-grid">
+            {% for auction in upcoming_auctions %}
+            <div class="auction-card-home">
+                {% if auction.image %}
+                    <img src="{{ auction.image.url }}" alt="Аукцион «{{ auction.title }}»" class="auction-home-image">
+                {% else %}
+                    <div class="auction-home-image-placeholder" aria-hidden="true">🎯</div>
+                {% endif %}
+                <div class="auction-home-info">
+                    <h3 class="auction-home-title">{{ auction.title }}</h3>
+                    <p class="auction-home-description">{{ auction.description|truncatewords:15 }}</p>
+                    
+                    <div class="auction-home-dates">
+                        <div class="auction-home-date">
+                            <span class="date-label">📅 Начало:</span>
+                            <span class="date-value">{{ auction.start_date|date:"d.m.Y H:i" }}</span>
+                        </div>
+                        <div class="auction-home-date">
+                            <span class="date-label">📅 Окончание:</span>
+                            <span class="date-value">{{ auction.end_date|date:"d.m.Y H:i" }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="auction-home-meta">
+                        <span class="lots-count">{{ auction.lots.count }} лотов</span>
+                        {% if auction.lots.first %}
+                        <span class="starting-price">от {{ auction.lots.first.starting_price|currency }}</span>
+                        {% endif %}
+                    </div>
+                    
+                    <a href="{% url 'core:auction_detail' auction.id %}" class="auction-home-link">
+                        Подробнее об аукционе →
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- БЛОК "МОИ ЗАКАЗЫ" -->
     {% if is_authenticated and user_orders %}
     <div class="orders-section" style="margin-top: 3rem;">
         <h2 class="section-title">Мои последние заказы</h2>
@@ -173,7 +196,6 @@
                     </div>
                 </div>
                 
-                <!-- Краткий список товаров в заказе -->
                 <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #E8DCC8;">
                     <p style="font-size: 0.85rem; color: #8B7355; margin-bottom: 0.5rem;">Товары:</p>
                     <div style="display: flex; flex-wrap: wrap; gap: 0.5rem;">
@@ -203,6 +225,9 @@
     </div>
     {% endif %}
 
+    <div class="total-items-footer">
+        Всего в каталоге: <strong>{{ stats.total_count|default:0 }}</strong> уникальных предметов
+    </div>
 </div>
 
 <style>
@@ -227,6 +252,189 @@
         border-radius: 20px;
         font-size: 0.8rem;
         font-weight: 500;
+    }
+    
+    @media (max-width: 768px) {
+        .orders-section > div > div {
+            padding: 1rem;
+        }
+    }
+    .orders-section {
+        animation: fadeIn 0.5s ease;
+    }
+    
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    .order-status {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+    }
+    
+    /* Стили для блока "Скорые аукционы" */
+    .auctions-section {
+        margin-top: 3rem;
+        margin-bottom: 3rem;
+    }
+    
+    .section-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .section-link {
+        font-size: 0.9rem;
+        color: var(--gold);
+        text-decoration: none;
+        font-weight: normal;
+    }
+    
+    .section-link:hover {
+        text-decoration: underline;
+    }
+    
+    .upcoming-auctions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .auction-card-home {
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .auction-card-home:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+    
+    .auction-home-image {
+        width: 100%;
+        height: 160px;
+        object-fit: cover;
+    }
+    
+    .auction-home-image-placeholder {
+        width: 100%;
+        height: 160px;
+        background: linear-gradient(135deg, #382314, #5D4037);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2.5rem;
+        color: white;
+    }
+    
+    .auction-home-info {
+        padding: 1rem;
+    }
+    
+    .auction-home-title {
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+        color: var(--text-dark);
+    }
+    
+    .auction-home-description {
+        color: #8B7355;
+        font-size: 0.8rem;
+        margin-bottom: 0.75rem;
+        line-height: 1.4;
+    }
+    
+    .auction-home-dates {
+        background: #f9f6f0;
+        padding: 0.5rem;
+        border-radius: 8px;
+        margin: 0.5rem 0;
+    }
+    
+    .auction-home-date {
+        display: flex;
+        justify-content: space-between;
+        font-size: 0.75rem;
+        padding: 0.2rem 0;
+    }
+    
+    .date-label {
+        color: #8B7355;
+    }
+    
+    .date-value {
+        font-weight: 500;
+        color: var(--text-dark);
+    }
+    
+    .auction-home-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 0.75rem 0;
+        font-size: 0.8rem;
+    }
+    
+    .lots-count {
+        color: #8B7355;
+    }
+    
+    .starting-price {
+        color: var(--gold);
+        font-weight: bold;
+    }
+    
+    .auction-home-link {
+        display: inline-block;
+        color: var(--gold);
+        text-decoration: none;
+        font-size: 0.85rem;
+        font-weight: 500;
+        margin-top: 0.5rem;
+    }
+    
+    .auction-home-link:hover {
+        text-decoration: underline;
+    }
+    
+    @media (max-width: 768px) {
+        .upcoming-auctions-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .section-title {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
+    .total-items-footer {
+        text-align: center;
+        padding: 2rem 1rem 0.5rem;
+        font-size: 0.9rem;
+        color: #8B7355;
+        border-top: 1px solid var(--border-light);
+        margin-top: 2rem;
+    }
+    
+    .total-items-footer strong {
+        color: var(--gold);
+        font-size: 1.1rem;
     }
     
     @media (max-width: 768px) {

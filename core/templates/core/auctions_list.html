@@ -1,0 +1,294 @@
+{% extends 'core/base.html' %}
+{% load custom_tags %}
+
+{% block title %}Аукционы | VESTIGE{% endblock %}
+
+{% block content %}
+<div class="container">    
+    <!-- Активные аукционы -->
+    <h1 class="section-title">Аукционы</h1>
+    {% if active_auctions %}
+    <div class="auctions-section">
+        <h2 class="section-title">Идут прямо сейчас</h2>
+        <div class="auctions-grid">
+            {% for auction in active_auctions %}
+            <div class="auction-card active">
+                <div class="auction-badge active">ИДЁТ</div>
+                {% if auction.image %}
+                    <img src="{{ auction.image.url }}" alt="Аукцион «{{ auction.title }}»" class="auction-image">
+                {% else %}
+                    <div class="auction-image-placeholder" aria-hidden="true">🎯</div>
+                {% endif %}
+                <div class="auction-info">
+                    <h3 class="auction-title">{{ auction.title }}</h3>
+                    <p class="auction-description">{{ auction.description|truncatewords:25 }}</p>
+                    
+                    <div class="auction-dates">
+                        <div>Начало: {{ auction.start_date|date:"d.m.Y H:i" }}</div>
+                        <div>Окончание: {{ auction.end_date|date:"d.m.Y H:i" }}</div>
+                    </div>
+                    
+                    <div class="auction-meta">
+                        <span>Лотов: {{ auction.lots.count }}</span>
+                        <span>От {{ auction.lots.first.starting_price|currency|default:"уточняется" }}</span>
+                    </div>
+                    
+                    <a href="{% url 'core:auction_detail' auction.id %}" class="btn btn-primary">Подробнее →</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Предстоящие аукционы -->
+    {% if upcoming_auctions %}
+    <div class="auctions-section">
+        <h2 class="section-title">Скоро начнутся</h2>
+        <div class="auctions-grid">
+            {% for auction in upcoming_auctions %}
+            <div class="auction-card upcoming">
+                <div class="auction-badge upcoming">СКОРО</div>
+                {% if auction.image %}
+                    <img src="{{ auction.image.url }}" alt="{{ auction.title }}" class="auction-image">
+                {% else %}
+                    <div class="auction-image-placeholder">📅</div>
+                {% endif %}
+                <div class="auction-info">
+                    <h3 class="auction-title">{{ auction.title }}</h3>
+                    <p class="auction-description">{{ auction.description|truncatewords:20 }}</p>
+                    
+                    <div class="auction-dates">
+                        <div>Начало: {{ auction.start_date|date:"d.m.Y H:i" }}</div>
+                        <div>Окончание: {{ auction.end_date|date:"d.m.Y H:i" }}</div>
+                    </div>
+                    
+                    <div class="auction-meta">
+                        <span>Лотов: {{ auction.lots.count }}</span>
+                    </div>
+                    
+                    <a href="{% url 'core:auction_detail' auction.id %}" class="btn btn-secondary">Подробнее</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Завершённые аукционы -->
+    {% if completed_auctions %}
+    <div class="auctions-section">
+        <h2 class="section-title">Прошедшие аукционы</h2>
+        <div class="auctions-grid">
+            {% for auction in completed_auctions %}
+            <div class="auction-card completed">
+                <div class="auction-badge completed">ЗАВЕРШЁН</div>
+                {% if auction.image %}
+                    <img src="{{ auction.image.url }}" alt="{{ auction.title }}" class="auction-image">
+                {% else %}
+                    <div class="auction-image-placeholder">🏆</div>
+                {% endif %}
+                <div class="auction-info">
+                    <h3 class="auction-title">{{ auction.title }}</h3>
+                    <p class="auction-description">{{ auction.description|truncatewords:20 }}</p>
+                    
+                    <div class="auction-dates">
+                        <div>📅 Проводился: {{ auction.start_date|date:"d.m.Y H:i" }}</div>
+                        <div>📍 Завершён: {{ auction.end_date|date:"d.m.Y H:i" }}</div>
+                    </div>
+                    
+                    <div class="auction-meta">
+                        <span>Лотов: {{ auction.lots.count }}</span>
+                    </div>
+                    
+                    <a href="{% url 'core:auction_detail' auction.id %}" class="btn-outline-small">Итоги</a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+    
+    {% if not active_auctions and not upcoming_auctions and not completed_auctions %}
+    <div class="empty-auctions">
+        <div class="empty-icon">🎯</div>
+        <h3>Аукционов пока нет</h3>
+        <p>Скоро здесь появятся уникальные предметы для торгов</p>
+        <a href="{% url 'core:catalog' %}" class="btn btn-primary">Перейти в каталог</a>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .auctions-header {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    .auctions-subtitle {
+        color: #8B7355;
+        font-size: 1.1rem;
+    }
+    
+    .auctions-stats {
+        display: flex;
+        gap: 1rem;
+        justify-content: center;
+        margin-bottom: 3rem;
+        flex-wrap: wrap;
+    }
+    
+    .stat-card {
+        background: white;
+        padding: 1rem 2rem;
+        border-radius: 16px;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: var(--gold);
+    }
+    
+    .stat-label {
+        font-size: 0.85rem;
+        color: #8B7355;
+    }
+    
+    .auctions-section {
+        margin-bottom: 3rem;
+    }
+    
+    .section-title {
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .auctions-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .auction-card {
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: transform 0.2s, box-shadow 0.2s;
+        position: relative;
+    }
+    
+    .auction-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+    
+    
+    .auction-badge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.7rem;
+        font-weight: bold;
+        z-index: 1;
+    }
+    
+    .auction-badge.active {
+        background: #4CAF50;
+        color: white;
+    }
+    
+    .auction-badge.upcoming {
+        background: #FF9800;
+        color: white;
+    }
+    
+    .auction-badge.completed {
+        background: #9E9E9E;
+        color: white;
+    }
+    
+    .auction-image {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+    }
+    
+    .auction-image-placeholder {
+        width: 100%;
+        height: 200px;
+        background: linear-gradient(135deg, #382314, #5D4037);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        color: white;
+    }
+    
+    .auction-info {
+        padding: 1.25rem;
+    }
+    
+    .auction-title {
+        font-size: 1.2rem;
+        margin-bottom: 0.5rem;
+        color: var(--text-dark);
+    }
+    
+    .auction-description {
+        color: #8B7355;
+        font-size: 0.85rem;
+        margin-bottom: 1rem;
+        line-height: 1.4;
+    }
+    
+    .auction-dates {
+        font-size: 0.8rem;
+        color: #8B7355;
+        margin: 0.5rem 0;
+        line-height: 1.6;
+        background: #f9f6f0;
+        padding: 0.5rem;
+        border-radius: 8px;
+    }
+    
+    .auction-meta {
+        display: flex;
+        gap: 1rem;
+        font-size: 0.8rem;
+        color: #8B7355;
+        margin: 0.75rem 0;
+    }
+    
+    .empty-auctions {
+        text-align: center;
+        padding: 4rem;
+        background: white;
+        border-radius: 16px;
+    }
+    
+    .empty-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+    }
+    
+    @media (max-width: 768px) {
+        .auctions-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .stat-card {
+            padding: 0.75rem 1.5rem;
+        }
+        
+        .stat-value {
+            font-size: 1.5rem;
+        }
+    }
+</style>
+{% endblock %}

@@ -6,8 +6,12 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db.models import Q, Count, Avg, Sum, F
 from django.http import HttpResponseRedirect
 from django.urls import reverse
-from .models import AntiqueItem, Category, CartItem, User, Order, OrderItem
+from .models import AntiqueItem, Category, CartItem, User, Order, OrderItem, Auction, AuctionLot
 from .forms import CartItemForm, OrderForm, LoginForm, RegistrationForm, AntiqueItemForm
+from django.utils import timezone
+from datetime import timedelta
+from django.db.models import Prefetch
+from django.contrib import messages
 
 # Регистрация
 def register_view(request):
@@ -79,12 +83,11 @@ def home_view(request):
     
     # ВЫПОЛНЯЕМ ПОИСК, если есть запрос
     if search_query:
-        search_results = AntiqueItem.objects.filter(
+        search_results = AntiqueItem.available.available().filter(
             Q(name__icontains=search_query) |
             Q(description__icontains=search_query) |
-            Q(era__icontains=search_query),
-            stock__gt=0  # только товары в наличии
-        ).order_by('-created_at')[:8]  # первые 8 результатов
+            Q(era__icontains=search_query)
+        ).order_by('-created_at')[:8]
         
         search_count = search_results.count()
     
@@ -111,18 +114,24 @@ def home_view(request):
             user_id=user_id
         ).select_related('user').prefetch_related('items__antique_item').order_by('-created_at')[:3]
     
+    upcoming_auctions = Auction.objects.filter(
+        start_date__gt=timezone.now(),
+        status__in=['upcoming', 'active']
+    ).exclude(status='cancelled').prefetch_related(
+        'lots__antique_item'
+    ).order_by('start_date')[:3]
+    
     context = {
         'recently_viewed': recently_viewed,
         'user_orders': user_orders,
         'is_authenticated': bool(user_id),
         'stats': stats,
-        # Данные для поиска
         'search_query': search_query,
-        'search_results': search_results,  # ← теперь здесь будут результаты поиска
+        'search_results': search_results,
         'search_count': search_count,
+        'upcoming_auctions': upcoming_auctions,
     }
     return render(request, 'core/home.html', context)
-
 
 
 
@@ -248,12 +257,15 @@ def add_to_cart(request, pk):
     
     user_id = request.session.get('user_id')
     if not user_id:
-        # Если не авторизован - перенаправляем на вход
         return HttpResponseRedirect(reverse('core:login') + '?next=' + request.path)
     
     quantity = int(request.POST.get('quantity', 1))
     
-    # [ТЗ 4.7] update() - обновляем количество если товар уже в корзине
+    # Проверяем, достаточно ли товара на складе
+    if quantity > item.stock:
+        messages.error(request, f'Недостаточно товара. Доступно: {item.stock} шт.')
+        return HttpResponseRedirect(reverse('core:item_detail', args=[item.id]))
+    
     cart_item, created = CartItem.objects.get_or_create(
         user_id=user_id,
         antique_item=item,
@@ -261,16 +273,54 @@ def add_to_cart(request, pk):
     )
     
     if not created:
-        # Обновляем количество
-        cart_item.quantity += quantity
+        # Проверяем, не превысит ли новое количество остаток
+        new_quantity = cart_item.quantity + quantity
+        if new_quantity > item.stock:
+            messages.error(request, f'Недостаточно товара. В корзине уже {cart_item.quantity} шт., доступно {item.stock} шт.')
+            return HttpResponseRedirect(reverse('core:item_detail', args=[item.id]))
+        cart_item.quantity = new_quantity
         cart_item.save()
     
-    # [ТЗ 4.10] HttpResponseRedirect
+    messages.success(request, f'Товар "{item.name}" добавлен в корзину')
     return HttpResponseRedirect(reverse('core:item_detail', args=[item.id]))
+
+def clean_cart_of_unavailable_items(request):
+    """Удаляет из корзины товары, которых нет в наличии"""
+    user_id = request.session.get('user_id')
+    if not user_id:
+        return
+    
+    cart_items = CartItem.objects.filter(user_id=user_id)
+    removed_items = []
+    
+    for cart_item in cart_items:
+        if cart_item.antique_item.stock == 0:
+            removed_items.append(cart_item.antique_item.name)
+            cart_item.delete()
+        elif cart_item.antique_item.stock < cart_item.quantity:
+            # Если остаток меньше, чем в корзине - уменьшаем количество
+            cart_item.quantity = cart_item.antique_item.stock
+            cart_item.save()
+            removed_items.append(f"{cart_item.antique_item.name} (количество уменьшено до {cart_item.antique_item.stock})")
+    
+    return removed_items
 
 
 def cart_view(request):
+
+    removed = clean_cart_of_unavailable_items(request)
+    
     user_id = request.session.get('user_id')
+    
+    if not user_id:
+        return render(request, 'core/cart.html', {'cart_items': [], 'total': 0, 'has_items': False})
+    
+    cart_items = CartItem.objects.filter(user_id=user_id).select_related('antique_item').prefetch_related('antique_item__category')
+    
+    # Если были удалены товары, показываем сообщение
+    if removed:
+        messages.warning(request, f"Некоторые товары больше недоступны: {', '.join(removed)}")
+
     
     if not user_id:
         return render(request, 'core/cart.html', {'cart_items': [], 'total': 0, 'has_items': False})
@@ -357,6 +407,25 @@ def checkout_view(request):
     if not cart_items.exists():
         return redirect('core:cart')
     
+    # ПРОВЕРКА: достаточно ли товаров на складе
+    insufficient_stock = []
+    for cart_item in cart_items:
+        if cart_item.antique_item.stock < cart_item.quantity:
+            insufficient_stock.append({
+                'name': cart_item.antique_item.name,
+                'available': cart_item.antique_item.stock,
+                'requested': cart_item.quantity
+            })
+    
+    if insufficient_stock:
+        # Если товаров недостаточно - показываем ошибку
+        error_message = "Некоторые товары недоступны в нужном количестве:\n"
+        for item in insufficient_stock:
+            error_message += f"- {item['name']}: доступно {item['available']} шт., запрошено {item['requested']} шт.\n"
+        
+        messages.error(request, error_message)
+        return redirect('core:cart')
+    
     # Вычисляем сумму без скидки
     subtotal = cart_items.aggregate(
         total=Sum(F('antique_item__price') * F('quantity'))
@@ -376,12 +445,16 @@ def checkout_view(request):
     if request.method == 'POST':
         form = OrderForm(request.POST)
         if form.is_valid():
-            # Создаем заказ с итоговой суммой (уже со скидкой)
+            # СНАЧАЛА: уменьшаем остатки товаров
+            for cart_item in cart_items:
+                cart_item.antique_item.decrease_stock(cart_item.quantity)
+            
+            # ЗАТЕМ: создаем заказ
             order = Order(
                 user_id=user_id,
                 delivery_address=form.cleaned_data['delivery_address'],
                 payment_method=form.cleaned_data['payment_method'],
-                total_price=total,  # ← сохраняем сумму со скидкой
+                total_price=total,
                 status='processing'
             )
             order.save()
@@ -463,3 +536,183 @@ def item_delete_view(request, pk):
         return redirect('core:catalog')
     
     return render(request, 'core/item_confirm_delete.html', {'item': item})
+
+
+def user_orders_view(request):
+    """Страница заказов пользователя"""
+    user_id = request.session.get('user_id')
+    
+    if not user_id:
+        return redirect('core:login')
+    
+    # Получаем все заказы пользователя
+    orders = Order.objects.filter(
+        user_id=user_id
+    ).select_related('user').prefetch_related(
+        'items__antique_item'
+    ).order_by('-created_at')
+    
+    # Статистика по заказам
+    total_orders = orders.count()
+    total_spent = orders.aggregate(total=Sum('total_price'))['total'] or 0
+    
+    # Заказы по статусам
+    processing_count = orders.filter(status='processing').count()
+    shipped_count = orders.filter(status='shipped').count()
+    delivered_count = orders.filter(status='delivered').count()
+    cancelled_count = orders.filter(status='cancelled').count()
+    
+    # Фильтрация по статусу
+    status_filter = request.GET.get('status', '')
+    if status_filter and status_filter in ['processing', 'shipped', 'delivered', 'cancelled']:
+        orders = orders.filter(status=status_filter)
+    
+    
+    # Пагинация
+    paginator = Paginator(orders, 10)
+    page = request.GET.get('page', 1)
+    
+    try:
+        page_orders = paginator.page(page)
+    except PageNotAnInteger:
+        page_orders = paginator.page(1)
+    except EmptyPage:
+        page_orders = paginator.page(paginator.num_pages)
+    
+    context = {
+        'orders': page_orders,
+        'total_orders': total_orders,
+        'total_spent': total_spent,
+        'processing_count': processing_count,
+        'shipped_count': shipped_count,
+        'delivered_count': delivered_count,
+        'cancelled_count': cancelled_count,
+        'current_status': status_filter,
+        'is_authenticated': True,
+    }
+    
+    return render(request, 'core/user_orders.html', context)
+
+def cancel_order(request, order_id):
+    """Отмена заказа"""
+    user_id = request.session.get('user_id')
+    
+    if not user_id:
+        return redirect('core:login')
+    
+    order = get_object_or_404(Order, id=order_id, user_id=user_id)
+    
+    # Отменить можно только заказ в статусе "В обработке"
+    if order.status == 'processing':
+        order.status = 'cancelled'
+        order.save()
+        
+        # Возвращаем товары на склад
+        for item in order.items.all():
+            item.antique_item.increase_stock(item.quantity)
+    
+    return redirect('core:user_orders')
+
+
+
+
+def auctions_list_view(request):
+    """Список всех аукционов"""
+    now = timezone.now()
+    
+    # Активные аукционы (идут прямо сейчас)
+    active_auctions = Auction.objects.filter(
+        start_date__lte=now,
+        end_date__gte=now
+    ).exclude(status='cancelled').prefetch_related(
+        Prefetch('lots', queryset=AuctionLot.objects.select_related('antique_item'))
+    ).order_by('end_date')
+    
+    # Предстоящие аукционы (ещё не начались)
+    upcoming_auctions = Auction.objects.filter(
+        start_date__gt=now
+    ).exclude(status='cancelled').prefetch_related(
+        Prefetch('lots', queryset=AuctionLot.objects.select_related('antique_item'))
+    ).order_by('start_date')
+    
+    # Завершённые аукционы (уже прошли) - показываем только последние 6
+    completed_auctions = Auction.objects.filter(
+        end_date__lt=now
+    ).exclude(status='cancelled').prefetch_related(
+        Prefetch('lots', queryset=AuctionLot.objects.select_related('antique_item'))
+    ).order_by('-end_date')[:6]
+    
+    # Статистика
+
+    context = {
+        'active_auctions': active_auctions,
+        'upcoming_auctions': upcoming_auctions,
+        'completed_auctions': completed_auctions,
+        'now': now,
+    }
+    
+    return render(request, 'core/auctions_list.html', context)
+
+
+def auction_detail_view(request, pk):
+    """Детальная страница аукциона"""
+    auction = get_object_or_404(
+        Auction.objects.prefetch_related(
+            Prefetch('lots', queryset=AuctionLot.objects.select_related('antique_item').order_by('order'))
+        ),
+        pk=pk
+    )
+    
+    # Определяем статус аукциона для отображения
+    if auction.status == 'cancelled':
+        auction_status = 'cancelled'
+    elif auction.end_date < timezone.now():
+        auction_status = 'completed'
+    elif auction.start_date <= timezone.now() <= auction.end_date:
+        auction_status = 'active'
+    elif auction.start_date > timezone.now():
+        auction_status = 'upcoming'
+    else:
+        auction_status = auction.status
+    
+    context = {
+        'auction': auction,
+        'auction_status': auction_status,
+        'is_active': auction_status == 'active',
+        'is_upcoming': auction_status == 'upcoming',
+        'is_completed': auction_status == 'completed',
+        'is_cancelled': auction_status == 'cancelled',
+        'now': timezone.now(),
+    }
+    
+    return render(request, 'core/auction_detail.html', context)
+
+def profile_view(request):
+    """Страница профиля пользователя (только просмотр)"""
+    user_id = request.session.get('user_id')
+    
+    if not user_id:
+        return redirect('core:login')
+    
+    user = get_object_or_404(User, id=user_id)
+    
+    # Статистика пользователя
+    orders_count = Order.objects.filter(user_id=user_id).count()
+    total_spent = Order.objects.filter(user_id=user_id, status='delivered').aggregate(
+        total=Sum('total_price')
+    )['total'] or 0
+    
+    # Активные заказы
+    active_orders = Order.objects.filter(
+        user_id=user_id,
+        status__in=['processing', 'shipped']
+    ).count()
+    
+    context = {
+        'user': user,
+        'orders_count': orders_count,
+        'total_spent': total_spent,
+        'active_orders': active_orders,
+    }
+    
+    return render(request, 'core/profile.html', context)

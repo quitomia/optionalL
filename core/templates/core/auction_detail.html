@@ -1,0 +1,503 @@
+{% extends 'core/base.html' %}
+{% load custom_tags %}
+
+{% block title %}{{ auction.title }} | VESTIGE{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Хлебные крошки -->
+    <div class="breadcrumbs">
+        <a href="{% url 'core:home' %}">Главная</a> /
+        <a href="{% url 'core:auctions' %}">Аукционы</a> /
+        <span>{{ auction.title }}</span>
+    </div>
+
+    
+    <!-- Основная информация -->
+    <div class="auction-detail-header">
+        {% if auction.image %}
+            <div class="auction-detail-image">
+                <img src="{{ auction.image.url }}" alt="{{ auction.title }}">
+            </div>
+        {% endif %}
+        
+        <div class="auction-detail-info">
+            <h1 class="auction-detail-title">{{ auction.title }}</h1>
+            <div class="auction-detail-description">
+                {{ auction.description|linebreaks }}
+            </div>
+            
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">📅 Дата начала:</span>
+                    <span class="info-value">{{ auction.start_date|date:"d.m.Y H:i" }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">📅 Дата окончания:</span>
+                    <span class="info-value">{{ auction.end_date|date:"d.m.Y H:i" }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Количество лотов:</span>
+                    <span class="info-value">{{ auction.lots.count }}</span>
+                </div>
+                {% if is_active %}
+                <div class="info-item highlight">
+                    <span class="info-label">Статус:</span>
+                    <span class="info-value status-active">Идёт прямо сейчас</span>
+                </div>
+                {% elif is_upcoming %}
+                <div class="info-item highlight">
+                    <span class="info-label">Статус:</span>
+                    <span class="info-value status-upcoming">Скоро начнётся</span>
+                </div>
+                {% elif is_completed %}
+                <div class="info-item highlight">
+                    <span class="info-label">Статус:</span>
+                    <span class="info-value status-completed">Завершён</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Список лотов -->
+    <div class="lots-section">
+        <h2 class="section-title">Лоты аукциона</h2>
+        
+        {% if auction.lots.all %}
+            <div class="lots-grid">
+                {% for lot in auction.lots.all %}
+                <div class="lot-card">
+                    {% if lot.antique_item.image %}
+                        <img src="{{ lot.antique_item.image.url }}" alt="{{ lot.antique_item.name }}" class="lot-image">
+                    {% else %}
+                        <div class="lot-image-placeholder" aria-hidden="true">🖼️</div>
+                    {% endif %}
+                    
+                    <div class="lot-info">
+                        <h3 class="lot-title">{{ lot.antique_item.name }}</h3>
+                        
+                        <div class="lot-details">
+                            <div class="detail-row">
+                                <span class="detail-label">Категория:</span>
+                                <span class="detail-value">{{ lot.antique_item.category.name }}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Эпоха:</span>
+                                <span class="detail-value">{{ lot.antique_item.era|default:"—" }}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Состояние:</span>
+                                <span class="detail-value">
+                                    {% if lot.antique_item.condition == 'excellent' %}Отличное
+                                    {% elif lot.antique_item.condition == 'good' %}Хорошее
+                                    {% else %}С реставрацией{% endif %}
+                                </span>
+                            </div>
+                            <div class="detail-row highlight">
+                                <span class="detail-label">Стартовая цена:</span>
+                                <span class="detail-value price">{{ lot.starting_price|currency }}</span>
+                            </div>
+                        </div>
+                        
+                        <a href="{% url 'core:item_detail' lot.antique_item.id %}" class="lot-link">
+                            Подробнее о предмете 
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty-lots">
+                <p>В этом аукционе пока нет лотов</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Информация об участии -->
+    {% if is_active %}
+    <div class="participation-info">
+        <h3>Как участвовать в аукционе?</h3>
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-text">Зарегистрируйтесь на сайте или войдите в аккаунт</div>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-text">Выберите интересующий вас лот</div>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-text">Свяжитесь с нами для участия в торгах</div>
+            </div>
+        </div>
+        <div class="contact-info">
+            <p>По вопросам участия: <strong>+7 (XXX) XXX-XX-XX</strong></p>
+            <p>Или напишите нам: <strong>auction@vestige.ru</strong></p>
+        </div>
+    </div>
+    {% elif is_completed %}
+    <div class="completed-info">
+        <h3>Аукцион завершён</h3>
+        <p>Победители аукциона будут уведомлены по электронной почте. Спасибо за участие!</p>
+        <a href="{% url 'core:catalog' %}" class="btn btn-primary">Перейти в каталог</a>
+    </div>
+    {% elif is_upcoming %}
+    <div class="upcoming-info">
+        <h3>Аукцион скоро начнётся</h3>
+        <p>Отметьте дату в календаре, чтобы не пропустить уникальные лоты!</p>
+        <a href="{% url 'core:catalog' %}" class="btn btn-secondary">Посмотреть каталог</a>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .breadcrumbs {
+        font-size: 0.85rem;
+        color: #8B7355;
+        margin-bottom: 1.5rem;
+    }
+    
+    .breadcrumbs a {
+        color: #8B7355;
+        text-decoration: none;
+    }
+    
+    .breadcrumbs a:hover {
+        color: var(--gold);
+    }
+    
+    .status-banner {
+        text-align: center;
+        padding: 0.75rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        font-weight: 500;
+    }
+    
+    .status-banner.active {
+        background: #E8F5E9;
+        color: #2E7D32;
+        border: 1px solid #4CAF50;
+    }
+    
+    .status-banner.upcoming {
+        background: #FFF3E0;
+        color: #E65100;
+        border: 1px solid #FF9800;
+    }
+    
+    .status-banner.completed {
+        background: #F5F5F5;
+        color: #757575;
+        border: 1px solid #BDBDBD;
+    }
+    
+    .status-banner.cancelled {
+        background: #FFEBEE;
+        color: #C62828;
+        border: 1px solid #EF5350;
+    }
+    
+    .auction-detail-header {
+        display: flex;
+        gap: 2rem;
+        margin-bottom: 3rem;
+        flex-wrap: wrap;
+        background: white;
+        border-radius: 24px;
+        padding: 2rem;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    }
+    
+    .auction-detail-image {
+        flex: 0 0 300px;
+    }
+    
+    .auction-detail-image img {
+        width: 100%;
+        height: auto;
+        border-radius: 16px;
+        object-fit: cover;
+    }
+    
+    .auction-detail-info {
+        flex: 1;
+    }
+    
+    .auction-detail-title {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        color: var(--text-dark);
+    }
+    
+    .auction-detail-description {
+        color: #5D4037;
+        line-height: 1.6;
+        margin-bottom: 1.5rem;
+    }
+    
+    .info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr auto auto;
+        gap: 1rem;
+        background: #f9f6f0;
+        padding: 1rem;
+        border-radius: 12px;
+        align-items: center;
+    }
+    
+    .info-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    /* Даты занимают больше места */
+    .date-item {
+        flex: 2;
+        min-width: 180px;
+    }
+    
+    /* Количество лотов - компактно */
+    .lots-item {
+        flex: 0;
+        white-space: nowrap;
+    }
+    
+    /* Статус - среднее */
+    .status-item {
+        flex: 1;
+        min-width: 140px;
+    }
+    
+    .info-label {
+        font-size: 0.85rem;
+        color: #8B7355;
+    }
+    
+    .info-value {
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+    
+    .status-active,
+    .status-upcoming,
+    .status-completed {
+        color: var(--text-dark);
+    }
+    
+    .lots-section {
+        margin-bottom: 3rem;
+    }
+    
+    .section-title {
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .lots-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .lot-card {
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: transform 0.2s;
+    }
+    
+    .lot-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+    }
+    
+    .lot-image {
+        width: 100%;
+        height: 200px;
+        object-fit: cover;
+    }
+    
+    .lot-image-placeholder {
+        width: 100%;
+        height: 200px;
+        background: #f0ebe3;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+    }
+    
+    .lot-info {
+        padding: 1rem;
+    }
+    
+    .lot-title {
+        font-size: 1.1rem;
+        margin-bottom: 0.75rem;
+        color: var(--text-dark);
+    }
+    
+    .lot-details {
+        margin-bottom: 1rem;
+    }
+    
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.3rem 0;
+        font-size: 0.85rem;
+        border-bottom: 1px dashed #f0ebe3;
+    }
+    
+    .detail-row.highlight {
+        background: #f9f6f0;
+        margin-top: 0.5rem;
+        padding: 0.5rem;
+        border-radius: 8px;
+        border-bottom: none;
+    }
+    
+    .detail-label {
+        color: #8B7355;
+    }
+    
+    .detail-value.price {
+        color: var(--gold);
+        font-weight: bold;
+        font-size: 1rem;
+    }
+    
+    .lot-link {
+        display: inline-block;
+        color: var(--gold);
+        text-decoration: none;
+        font-size: 0.85rem;
+        margin-top: 0.5rem;
+    }
+    
+    .lot-link:hover {
+        text-decoration: underline;
+    }
+    
+    .participation-info,
+    .completed-info,
+    .upcoming-info {
+        background: white;
+        border-radius: 24px;
+        padding: 2rem;
+        text-align: center;
+    }
+    
+    .steps {
+        display: flex;
+        justify-content: space-around;
+        flex-wrap: wrap;
+        gap: 1.5rem;
+        margin: 1.5rem 0;
+    }
+    
+    .step {
+        text-align: center;
+        flex: 1;
+        min-width: 150px;
+    }
+    
+    .step-number {
+        width: 40px;
+        height: 40px;
+        background: var(--gold);
+        color: var(--bg-dark);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        font-weight: bold;
+        margin: 0 auto 0.5rem;
+    }
+    
+    .step-text {
+        font-size: 0.9rem;
+        color: #5D4037;
+    }
+    
+    .contact-info {
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--border-light);
+    }
+    
+    .contact-info p {
+        margin: 0.5rem 0;
+        color: #8B7355;
+    }
+    
+    .completed-info h3,
+    .upcoming-info h3 {
+        color: var(--text-dark);
+        margin-bottom: 1rem;
+    }
+    
+    .completed-info p,
+    .upcoming-info p {
+        color: #8B7355;
+        margin-bottom: 1.5rem;
+    }
+    
+    .empty-lots {
+        text-align: center;
+        padding: 3rem;
+        background: white;
+        border-radius: 16px;
+        color: #8B7355;
+    }
+    
+    /* Медиа-запросы */
+    @media (max-width: 768px) {
+        .auction-detail-header {
+            flex-direction: column;
+            padding: 1rem;
+        }
+        
+        .auction-detail-image {
+            flex: 0 0 auto;
+            max-width: 100%;
+        }
+        
+        .auction-detail-title {
+            font-size: 1.5rem;
+        }
+        
+        .info-grid {
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+        
+        .date-item,
+        .lots-item,
+        .status-item {
+            flex: auto;
+            justify-content: space-between;
+        }
+        
+        .lots-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .steps {
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .step {
+            max-width: 250px;
+        }
+    }
+</style>
+{% endblock %}

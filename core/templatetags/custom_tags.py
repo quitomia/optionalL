@@ -42,7 +42,8 @@ def cart_total(context):
 @register.simple_tag
 def get_new_items(limit=3):
     """Возвращает последние добавленные товары"""
-    return AntiqueItem.objects.filter(stock__gt=0).order_by('-created_at')[:limit]
+    # return AntiqueItem.objects.filter(stock__gt=0).order_by('-created_at')[:limit]
+    return AntiqueItem.available.in_stock()[:limit]
 
 
 @register.filter

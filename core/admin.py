@@ -3,6 +3,7 @@ from django.utils.html import format_html
 from django.http import HttpResponse  
 from reportlab.pdfgen import canvas  
 from django.contrib.auth.hashers import make_password
+from django import forms
 from . import models
 
 # [ТЗ 6.5] Inlines в админке
@@ -10,12 +11,15 @@ class CartItemInline(admin.TabularInline):
     model = models.CartItem
     extra = 0
     fields = ('antique_item', 'quantity')
+    raw_id_fields = ('antique_item',)  # Добавляем raw_id_fields для товаров
 
 
 class OrderItemInline(admin.TabularInline):
     model = models.OrderItem
     extra = 0
     readonly_fields = ('price_at_time',)  # [ТЗ 7.10] readonly_fields
+    raw_id_fields = ('antique_item',)  # Добавляем raw_id_fields для товаров
+
 
 def export_order_pdf(modeladmin, request, queryset):
     response = HttpResponse(content_type='application/pdf')
@@ -79,6 +83,7 @@ class UserAdmin(admin.ModelAdmin):
             obj.password = make_password(obj.password)
         super().save_model(request, obj, form, change)
 
+
 @admin.register(models.Category)
 class CategoryAdmin(admin.ModelAdmin):
     list_display = ('name', 'slug')
@@ -87,11 +92,12 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(models.AntiqueItem)
 class AntiqueItemAdmin(admin.ModelAdmin):
+    
     # [ТЗ 7.5, 7.6] @admin.display и short_description
     @admin.display(description='Превью')
     def item_image_preview(self, obj):
         if obj.image:
-            return format_html('<img src="{}" style="max-height: 50px;"/>', obj.image)
+            return format_html('<img src="{}" style="max-height: 50px; max-width: 50px;"/>', obj.image.url)
         return "Нет фото"
     
     @admin.display(description='Доп. категории')
@@ -110,7 +116,8 @@ class AntiqueItemAdmin(admin.ModelAdmin):
 
     fieldsets = (
         ('Основное', {
-            'fields': ('name', 'description', 'price', 'category', 'additional_categories')  # добавили additional_categories
+            'fields': ('name', 'description', 'price', 'category', 'additional_categories'),
+            'description': '<span style="color: #666;">Поле "Название" теперь имеет многострочный ввод</span>'
         }),
         ('Детали', {
             'fields': ('era', 'condition', 'stock')
@@ -123,21 +130,26 @@ class AntiqueItemAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
-    
+
+
 @admin.register(models.CartItem)
 class CartItemAdmin(admin.ModelAdmin):
     list_display = ('user', 'antique_item', 'quantity', 'added_at')
     list_filter = ('added_at',)
     search_fields = ('user__email', 'antique_item__name')
+    raw_id_fields = ('user', 'antique_item')  # Добавляем raw_id_fields для пользователей и товаров
+    autocomplete_fields = ('user', 'antique_item')  # Альтернатива с автодополнением (более удобно)
 
 
 @admin.register(models.Order)
 class OrderAdmin(admin.ModelAdmin):
     list_display = ('id', 'user', 'total_price', 'status', 'created_at')
     list_filter = ('status', 'payment_method')  # [ТЗ 7.2]
-    search_fields = ('user__email', 'delivery_address')  # [ТЗ 7.11]
+    search_fields = ('user__email', 'delivery_address', 'id')  # Добавляем поиск по ID заказа
     readonly_fields = ('total_price', 'created_at', 'updated_at')  # [ТЗ 7.10]
     inlines = [OrderItemInline]  # [ТЗ 6.5] inlines
+    raw_id_fields = ('user',)  # Добавляем raw_id_fields для пользователя
+    autocomplete_fields = ('user',)  # Автодополнение для пользователя
 
     actions = [export_order_pdf]  # [ТЗ 5.1] Генерация PDF в админке
 
@@ -146,3 +158,43 @@ class OrderAdmin(admin.ModelAdmin):
 class OrderItemAdmin(admin.ModelAdmin):
     list_display = ('order', 'antique_item', 'quantity', 'price_at_time')
     search_fields = ('order__id', 'antique_item__name')
+    raw_id_fields = ('order', 'antique_item')  # Добавляем raw_id_fields для заказов и товаров
+    autocomplete_fields = ('order', 'antique_item')  # Автодополнение для удобства
+    list_select_related = ('order', 'antique_item')  # Оптимизация запросов
+    list_filter = ('order__status',)  # Фильтр по статусу заказа
+
+
+# Добавьте в core/admin.py
+
+
+
+@admin.register(models.Auction)
+class AuctionAdmin(admin.ModelAdmin):
+    list_display = ('title', 'start_date', 'end_date', 'status', 'created_at')
+    list_filter = ('status', 'start_date')
+    search_fields = ('title', 'description')
+    readonly_fields = ('created_at', 'updated_at')
+    fieldsets = (
+        ('Основное', {
+            'fields': ('title', 'description', 'status')
+        }),
+        ('Даты', {
+            'fields': ('start_date', 'end_date')
+        }),
+        ('Медиа', {
+            'fields': ('image',)
+        }),
+        ('Системное', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+
+@admin.register(models.AuctionLot)
+class AuctionLotAdmin(admin.ModelAdmin):
+    list_display = ('auction', 'antique_item', 'starting_price', 'order')
+    list_filter = ('auction',)
+    search_fields = ('antique_item__name', 'auction__title')
+    raw_id_fields = ('antique_item',)
+    autocomplete_fields = ('antique_item',)

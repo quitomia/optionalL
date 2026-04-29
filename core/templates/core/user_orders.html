@@ -1,0 +1,605 @@
+{% extends 'core/base.html' %}
+{% load custom_tags %}
+
+{% block title %}Мои заказы | VESTIGE{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="orders-header">
+        <h1 class="section-title">Мои заказы</h1>
+        
+        <div class="orders-stats">
+            <div class="stat-card">
+                <div class="stat-value">{{ total_orders }}</div>
+                <div class="stat-label">Всего заказов</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ total_spent|currency }}</div>
+                <div class="stat-label">Всего потрачено</div>
+            </div>
+            {% if processing_count > 0 %}
+            <div class="stat-card stat-processing">
+                <div class="stat-value">{{ processing_count }}</div>
+                <div class="stat-label">В обработке</div>
+            </div>
+            {% endif %}
+            {% if shipped_count > 0 %}
+            <div class="stat-card stat-shipped">
+                <div class="stat-value">{{ shipped_count }}</div>
+                <div class="stat-label">Отправлены</div>
+            </div>
+            {% endif %}
+            {% if delivered_count > 0 %}
+            <div class="stat-card stat-delivered">
+                <div class="stat-value">{{ delivered_count }}</div>
+                <div class="stat-label">Доставлены</div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Фильтры -->
+    <div class="orders-filters">
+        <div class="filter-buttons">
+            <a href="{% url 'core:user_orders' %}" 
+               class="filter-btn {% if not current_status %}active{% endif %}">
+                Все
+            </a>
+            <a href="?status=processing" 
+               class="filter-btn {% if current_status == 'processing' %}active{% endif %}">
+                В обработке
+                {% if processing_count > 0 %}
+                <span class="badge">{{ processing_count }}</span>
+                {% endif %}
+            </a>
+            <a href="?status=shipped" 
+               class="filter-btn {% if current_status == 'shipped' %}active{% endif %}">
+                Отправлены
+                {% if shipped_count > 0 %}
+                <span class="badge">{{ shipped_count }}</span>
+                {% endif %}
+            </a>
+            <a href="?status=delivered" 
+               class="filter-btn {% if current_status == 'delivered' %}active{% endif %}">
+                Доставлены
+                {% if delivered_count > 0 %}
+                <span class="badge">{{ delivered_count }}</span>
+                {% endif %}
+            </a>
+            <a href="?status=cancelled" 
+               class="filter-btn {% if current_status == 'cancelled' %}active{% endif %}">
+                Отменены
+                {% if cancelled_count > 0 %}
+                <span class="badge">{{ cancelled_count }}</span>
+                {% endif %}
+            </a>
+        </div>
+        
+    </div>
+    
+    <!-- Список заказов -->
+    {% if orders %}
+        <div class="orders-list">
+            {% for order in orders %}
+            <div class="order-card" data-order-id="{{ order.id }}">
+                <div class="order-header">
+                    <div class="order-info">
+                        <div class="order-number">
+                            Заказ №{{ order.id }}
+                            <span class="order-status order-status-{{ order.status }}">
+                                {{ order.get_status_display }}
+                            </span>
+                        </div>
+                        <div class="order-date">
+                            📅 {{ order.created_at|date:"d.m.Y H:i" }}
+                        </div>
+                    </div>
+                    <div class="order-total">
+                        {{ order.total_price|currency }}
+                        <div class="payment-method">
+                            {{ order.get_payment_method_display }}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="order-items">
+                    {% for item in order.items.all %}
+                    <div class="order-item">
+                        <div class="order-item-image">
+                            {% if item.antique_item.image %}
+                                <img src="{{ item.antique_item.image.url }}" alt="{{ item.antique_item.name }}">
+                            {% else %}
+                                <div class="no-image">📷</div>
+                            {% endif %}
+                        </div>
+                        <div class="order-item-details">
+                            <a href="{% url 'core:item_detail' item.antique_item.id %}" class="order-item-title">
+                                {{ item.antique_item.name }}
+                            </a>
+                            <div class="order-item-meta">
+                                <span class="item-price">{{ item.price_at_time|currency }}</span>
+                                <span class="item-quantity">× {{ item.quantity }}</span>
+                                <!-- <span class="item-subtotal">{{ item.price_at_time|floatformat:2|add:0|multiply:item.quantity|currency }}</span> -->
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="order-footer">
+                    <div class="delivery-address">
+                        Адрес доставки: {{ order.delivery_address }}
+                    </div>
+                    <div class="order-actions">
+                        {% if order.status == 'processing' %}
+                            <form method="post" action="{% url 'core:cancel_order' order.id %}" 
+                                  class="cancel-form" style="display: inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-outline-small cancel-btn" 
+                                        onclick="return confirm('Вы уверены, что хотите отменить заказ №{{ order.id }}?')">
+                                    Отменить заказ
+                                </button>
+                            </form>
+                        {% endif %}
+                        {% if order.status == 'delivered' %}
+                            <a href="#" class="btn-outline-small review-btn" 
+                               data-order-id="{{ order.id }}">
+                                Оставить отзыв
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <!-- Пагинация -->
+        {% if orders.has_other_pages %}
+        <div class="pagination">
+            {% if orders.has_previous %}
+                <a href="?page=1{% if current_status %}&status={{ current_status }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">« Первая</a>
+                <a href="?page={{ orders.previous_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">← Назад</a>
+            {% endif %}
+            
+            {% for num in orders.paginator.page_range %}
+                {% if orders.number == num %}
+                    <span class="current">{{ num }}</span>
+                {% elif num > orders.number|add:'-3' and num < orders.number|add:'3' %}
+                    <a href="?page={{ num }}{% if current_status %}&status={{ current_status }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+            
+            {% if orders.has_next %}
+                <a href="?page={{ orders.next_page_number }}{% if current_status %}&status={{ current_status }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">Вперед →</a>
+                <a href="?page={{ orders.paginator.num_pages }}{% if current_status %}&status={{ current_status }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">Последняя »</a>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+    {% else %}
+        <div class="empty-orders">
+            <div class="empty-icon">📦</div>
+            <h3>У вас пока нет заказов</h3>
+            <p>Откройте каталог и выберите что-нибудь особенное</p>
+            <a href="{% url 'core:catalog' %}" class="btn btn-primary">Перейти в каталог</a>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    /* Стили для страницы заказов */
+    .orders-header {
+        margin-bottom: 2rem;
+    }
+    
+    .orders-stats {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        margin-top: 1rem;
+    }
+    
+    .stat-card {
+        background: white;
+        padding: 1rem 1.5rem;
+        border-radius: 16px;
+        text-align: center;
+        min-width: 100px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    
+    .stat-value {
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: var(--gold);
+    }
+    
+    .stat-label {
+        font-size: 0.8rem;
+        color: #8B7355;
+        margin-top: 0.25rem;
+    }
+    
+    .stat-processing {
+        color: #8B7355;
+    }
+    
+    
+    .orders-filters {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        padding: 1rem;
+        background: white;
+        border-radius: 16px;
+    }
+    
+    .filter-buttons {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .filter-btn {
+        padding: 0.5rem 1rem;
+        background: var(--bg-light);
+        border-radius: 8px;
+        text-decoration: none;
+        color: var(--text-dark);
+        font-size: 0.9rem;
+        transition: all 0.2s;
+    }
+    
+    .filter-btn.active {
+        background: var(--gold);
+        color: var(--bg-dark);
+    }
+    
+    .filter-btn .badge {
+        background: rgba(0,0,0,0.1);
+        border-radius: 12px;
+        padding: 0.1rem 0.5rem;
+        margin-left: 0.5rem;
+        font-size: 0.75rem;
+    }
+    
+    .search-order-form {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .search-input {
+        padding: 0.5rem 1rem;
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        width: 150px;
+    }
+    
+    .orders-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+    
+    .order-card {
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: box-shadow 0.2s;
+    }
+    
+    .order-card:hover {
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+    }
+    
+    .order-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        background: #faf8f5;
+        border-bottom: 1px solid var(--border-light);
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    
+    .order-number {
+        font-size: 1.1rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+    
+    .order-date {
+        font-size: 0.85rem;
+        color: #8B7355;
+        margin-top: 0.25rem;
+    }
+    
+    .order-total {
+        text-align: right;
+        font-size: 1.3rem;
+        font-weight: bold;
+        color: var(--gold);
+    }
+    
+    .payment-method {
+        font-size: 0.75rem;
+        font-weight: normal;
+        color: #8B7355;
+    }
+    
+    .order-items {
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border-light);
+    }
+    
+    .order-item {
+        display: flex;
+        gap: 1rem;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f0ebe3;
+    }
+    
+    .order-item:last-child {
+        border-bottom: none;
+    }
+    
+    .order-item-image {
+        width: 60px;
+        height: 60px;
+        flex-shrink: 0;
+        border-radius: 8px;
+        overflow: hidden;
+        background: #f0ebe3;
+    }
+    
+    .order-item-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .no-image {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+    }
+    
+    .order-item-details {
+        flex: 1;
+    }
+    
+    .order-item-title {
+        font-weight: 600;
+        text-decoration: none;
+        color: var(--text-dark);
+        transition: color 0.2s;
+    }
+    
+    .order-item-title:hover {
+        color: var(--gold);
+    }
+    
+    .order-item-meta {
+        margin-top: 0.5rem;
+        font-size: 0.9rem;
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+    
+    .item-price {
+        color: var(--gold);
+        font-weight: 500;
+    }
+    
+    .item-quantity {
+        color: #8B7355;
+    }
+    
+    .item-subtotal {
+        color: var(--text-dark);
+        font-weight: 600;
+    }
+    
+    .order-footer {
+        padding: 1rem 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        background: #faf8f5;
+    }
+    
+    .delivery-address {
+        font-size: 0.85rem;
+        color: #8B7355;
+    }
+    
+    .order-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+    
+    .btn-outline-small {
+        padding: 0.3rem 0.8rem;
+        border: 1px solid var(--gold);
+        background: transparent;
+        border-radius: 6px;
+        color: var(--gold);
+        font-size: 0.8rem;
+        text-decoration: none;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .btn-outline-small:hover {
+        background: var(--gold);
+        color: var(--bg-dark);
+    }
+    
+    .cancel-btn {
+        border-color: #d32f2f;
+        color: #d32f2f;
+    }
+    
+    .cancel-btn:hover {
+        background: #d32f2f;
+        color: white;
+    }
+    
+    .empty-orders {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: white;
+        border-radius: 16px;
+    }
+    
+    .empty-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+    }
+    
+    .empty-orders h3 {
+        margin-bottom: 0.5rem;
+        color: var(--text-dark);
+    }
+    
+    .empty-orders p {
+        color: #8B7355;
+        margin-bottom: 1.5rem;
+    }
+    
+    @media (max-width: 768px) {
+        .order-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .order-total {
+            text-align: left;
+        }
+        
+        .order-footer {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .orders-filters {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .search-order-form {
+            justify-content: stretch;
+        }
+        
+        .search-order-form input {
+            flex: 1;
+        }
+    }
+</style>
+
+<script>
+    // Для кнопок "Подробнее" - показываем модальное окно с деталями заказа
+    document.querySelectorAll('.view-details').forEach(button => {
+        button.addEventListener('click', async function(e) {
+            const orderId = this.dataset.orderId;
+            try {
+                const response = await fetch(`/api/order/${orderId}/`);
+                const order = await response.json();
+                showOrderDetails(order);
+            } catch (error) {
+                console.error('Ошибка загрузки деталей заказа:', error);
+            }
+        });
+    });
+    
+    function showOrderDetails(order) {
+        // Простое модальное окно (можно улучшить)
+        const modalHtml = `
+            <div class="modal-overlay">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Заказ №${order.id}</h3>
+                        <button class="modal-close">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p><strong>Статус:</strong> ${order.status_display}</p>
+                        <p><strong>Дата:</strong> ${order.created_at}</p>
+                        <p><strong>Адрес доставки:</strong> ${order.delivery_address}</p>
+                        <p><strong>Способ оплаты:</strong> ${order.payment_method_display}</p>
+                        <p><strong>Сумма:</strong> ${order.total_price} ₽</p>
+                        <hr>
+                        <h4>Товары в заказе:</h4>
+                        <ul>
+                            ${order.items.map(item => `<li>${item.name} x${item.quantity} — ${item.subtotal} ₽</li>`).join('')}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+        document.querySelector('.modal-close').addEventListener('click', () => {
+            document.querySelector('.modal-overlay').remove();
+        });
+    }
+</script>
+
+<style>
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+    }
+    
+    .modal-content {
+        background: white;
+        border-radius: 16px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+    }
+    
+    .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        border-bottom: 1px solid var(--border-light);
+    }
+    
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #8B7355;
+    }
+    
+    .modal-body {
+        padding: 1.5rem;
+    }
+</style>
+{% endblock %}

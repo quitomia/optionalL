@@ -149,9 +149,10 @@ class AntiqueItemForm(forms.ModelForm):
         }
     class Media:
         css = {
-            'all': ('css/item-form.css',)  # путь от STATIC_URL
+            'all': ('css/item-form.css',) 
         }
-        js = ('js/preview-image.js',)      # скрипт для предпросмотра картинки
+
+        js = ('js/preview-image.js',)
     
     def clean_price(self):
         price = self.cleaned_data.get('price')

@@ -1,0 +1,204 @@
+{% extends 'core/base.html' %}
+{% load custom_tags %}
+
+{% block title %}Мой профиль | VESTIGE{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="profile-header">
+        <h1 class="section-title">Мой профиль</h1>
+    </div>
+    
+    <div class="profile-grid">
+        <!-- Левая колонка - аватар и статистика -->
+        <div class="profile-sidebar">
+            <div class="profile-avatar">
+                <div class="avatar-placeholder">
+                    {{ user.name|slice:":1"|upper }}
+                </div>
+            </div>
+            <div class="profile-stats">
+                <div class="stat-item">
+                    <span class="stat-number">{{ orders_count }}</span>
+                    <span class="stat-label">заказов</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">{{ total_spent|currency }}</span>
+                    <span class="stat-label">потрачено</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">{{ active_orders }}</span>
+                    <span class="stat-label">активных</span>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Правая колонка - информация о пользователе -->
+        <div class="profile-info">
+            <div class="info-card">
+                <h2>Личная информация</h2>
+                
+                <div class="info-row">
+                    <span class="info-label">Email:</span>
+                    <span class="info-value">{{ user.email }}</span>
+                </div>
+                
+                <div class="info-row">
+                    <span class="info-label">Имя:</span>
+                    <span class="info-value">{{ user.name }}</span>
+                </div>
+                
+                <div class="info-row">
+                    <span class="info-label">Телефон:</span>
+                    <span class="info-value">{{ user.phone|default:"Не указан" }}</span>
+                </div>
+                
+                <div class="info-row">
+                    <span class="info-label">Дата регистрации:</span>
+                    <span class="info-value">{{ user.date_joined|date:"d.m.Y" }}</span>
+                </div>
+            </div>
+            
+            <div class="action-buttons">
+                <a href="{% url 'core:user_orders' %}" class="btn btn-secondary">
+                    Мои заказы
+                </a>
+                <a href="{% url 'core:logout' %}" class="btn btn-secondary">
+                    Выйти
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .profile-header {
+        margin-bottom: 2rem;
+    }
+    
+    .profile-grid {
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 2rem;
+    }
+    
+    /* Левая колонка */
+    .profile-sidebar {
+        background: white;
+        border-radius: 24px;
+        padding: 2rem;
+        text-align: center;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    }
+    
+    .profile-avatar {
+        margin-bottom: 1.5rem;
+    }
+    
+    .avatar-placeholder {
+        width: 120px;
+        height: 120px;
+        background: linear-gradient(135deg, var(--gold), var(--gold-dark));
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 3rem;
+        font-weight: bold;
+        color: var(--bg-dark);
+        margin: 0 auto;
+    }
+    
+    .profile-stats {
+        display: flex;
+        justify-content: space-around;
+        border-top: 1px solid var(--border-light);
+        padding-top: 1.5rem;
+    }
+    
+    .stat-item {
+        text-align: center;
+    }
+    
+    .stat-number {
+        display: block;
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: var(--gold);
+    }
+    
+    .stat-label {
+        font-size: 0.75rem;
+        color: #8B7355;
+    }
+    
+    /* Правая колонка */
+    .profile-info {
+        background: white;
+        border-radius: 24px;
+        padding: 2rem;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    }
+    
+    .info-card h2 {
+        font-size: 1.3rem;
+        margin-bottom: 1.5rem;
+        color: var(--text-dark);
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid var(--gold);
+        display: inline-block;
+    }
+    
+    .info-row {
+        display: flex;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid var(--border-light);
+    }
+    
+    .info-label {
+        width: 140px;
+        font-weight: 500;
+        color: #8B7355;
+    }
+    
+    .info-value {
+        flex: 1;
+        color: var(--text-dark);
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border-light);
+    }
+    
+    @media (max-width: 768px) {
+        .profile-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .profile-sidebar {
+            order: 2;
+        }
+        
+        .profile-info {
+            order: 1;
+        }
+        
+        .info-row {
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+        
+        .info-label {
+            width: auto;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}

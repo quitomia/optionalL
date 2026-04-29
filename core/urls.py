@@ -17,6 +17,12 @@ urlpatterns = [
     path('cart/remove/<int:item_id>/', views.remove_cart_item, name='remove_cart_item'),
     path('checkout/', views.checkout_view, name='checkout'),
     path('order-success/<int:order_id>/', views.order_success_view, name='order_success'),
+    path('orders/', views.user_orders_view, name='user_orders'),
+    path('order/<int:order_id>/cancel/', views.cancel_order, name='cancel_order'),
+
+    path('auctions/', views.auctions_list_view, name='auctions'),
+    path('auctions/<int:pk>/', views.auction_detail_view, name='auction_detail'),
+    path('profile/', views.profile_view, name='profile'),
 
     # CRUD для товаров
     path('items/create/', views.item_create_view, name='item_create'),
