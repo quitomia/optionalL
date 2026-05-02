@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     'core',
     'debug_toolbar',
     'simple_history',
+    'import_export',   
 ]
 
 MIDDLEWARE = [
@@ -56,6 +57,9 @@ MIDDLEWARE = [
 
 INTERNAL_IPS = ['127.0.0.1']
 
+from import_export.formats.base_formats import XLSX, CSV
+
+EXPORT_FORMATS = [XLSX, CSV]
 
 ROOT_URLCONF = 'vestige.urls'
 

@@ -8,6 +8,78 @@ from . import models
 
 from simple_history.admin import SimpleHistoryAdmin
 
+
+from import_export import resources
+from import_export.fields import Field
+from import_export.widgets import DecimalWidget, DateTimeWidget, ForeignKeyWidget
+from import_export.admin import ExportActionModelAdmin
+from .models import AntiqueItem, Order, Category, User
+from import_export.formats.base_formats import XLSX, CSV
+
+class AntiqueItemResource(resources.ModelResource):
+    # Добавляем поле с названием категории (связанная модель)
+    id = Field(attribute='id', column_name='ID')
+    name = Field(attribute='name', column_name='Название')
+    price = Field(attribute='price', column_name='Цена')
+    stock = Field(attribute='stock', column_name='Остаток')
+    condition = Field(attribute='condition', column_name='Состояние')
+    era = Field(attribute='era', column_name='Эпоха')
+    created_at = Field(attribute='created_at', column_name='Дата создания')
+    
+    category_name = Field(
+        attribute='category__name',  # путь к полю через ForeignKey
+        column_name='Категория'
+    )
+
+    class Meta:
+        model = AntiqueItem
+        # Какие поля экспортируем
+        fields = (
+            'id', 
+            'name', 
+            'category_name', 
+            'price', 
+            'stock', 
+            'condition', 
+            'era', 
+            'created_at'
+        )
+        # Порядок полей в Excel
+        export_order = fields
+
+
+#  РЕСУРС ДЛЯ ORDER 
+class OrderResource(resources.ModelResource):
+    id = Field(attribute='id', column_name='Номер заказа')
+    total_price = Field(attribute='total_price', column_name='Сумма')
+    status = Field(attribute='status', column_name='Статус')
+    payment_method = Field(attribute='payment_method', column_name='Способ оплаты')
+    delivery_address = Field(attribute='delivery_address', column_name='Адрес доставки')
+    created_at = Field(attribute='created_at', column_name='Дата создания')
+    # Добавляем поля из связанной модели User
+    user_email = Field(
+        attribute='user__email',
+        column_name='Email пользователя'
+    )
+    user_name = Field(
+        attribute='user__name',
+        column_name='Имя пользователя'
+    )
+    class Meta:
+        model = Order
+        fields = (
+            'id',
+            'user_email',
+            'user_name',
+            'total_price',
+            'status',
+            'payment_method',
+            'delivery_address',
+            'created_at'
+        )
+        export_order = fields
+
+
 # [ТЗ 6.5] Inlines в админке
 class CartItemInline(admin.TabularInline):
     model = models.CartItem
@@ -95,7 +167,8 @@ class CategoryAdmin(admin.ModelAdmin):
     prepopulated_fields = {'slug': ('name',)}
 
 @admin.register(models.AntiqueItem)
-class AntiqueItemAdmin(SimpleHistoryAdmin):
+class AntiqueItemAdmin(SimpleHistoryAdmin, ExportActionModelAdmin):
+    resource_class = AntiqueItemResource
     
     # [ТЗ 7.5, 7.6] @admin.display и short_description
     @admin.display(description='Превью')
@@ -147,7 +220,9 @@ class CartItemAdmin(admin.ModelAdmin):
 
 
 @admin.register(models.Order)
-class OrderAdmin(SimpleHistoryAdmin):
+class OrderAdmin(SimpleHistoryAdmin, ExportActionModelAdmin):
+    resource_class = OrderResource
+
     list_display = ('id', 'user', 'total_price', 'status', 'created_at')
     list_filter = ('status', 'payment_method')  # [ТЗ 7.2]
     search_fields = ('user__email', 'delivery_address', 'id')  # Добавляем поиск по ID заказа
